@@ -4,6 +4,7 @@ import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
 
 export type SQLiteCloudDb = {
   sql: (query: string) => Promise<unknown>;
+  close: (callback?: (err: Error | null) => void) => void;
 };
 
 export function getConnectionString(headers: Headers) {
@@ -26,6 +27,20 @@ export async function createSQLiteCloudDb(connectionString: string): Promise<SQL
 
   const { Database } = await import("@sqlitecloud/drivers");
   return new Database(connectionString) as SQLiteCloudDb;
+}
+
+/**
+ * Execute a callback with a database connection that is automatically closed
+ * when the callback completes (or throws). This prevents connection leaks
+ * that would otherwise exhaust the 20-connection limit on the free plan.
+ */
+export async function withDb<T>(connectionString: string, fn: (db: SQLiteCloudDb) => Promise<T>): Promise<T> {
+  const db = await createSQLiteCloudDb(connectionString);
+  try {
+    return await fn(db);
+  } finally {
+    db.close();
+  }
 }
 
 function quote(value: string) {

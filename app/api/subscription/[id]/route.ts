@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createSQLiteCloudDb, deleteSubscription, getConnectionString, updateSubscription } from "@/lib/sqlite-cloud";
+import { deleteSubscription, getConnectionString, updateSubscription, withDb } from "@/lib/sqlite-cloud";
 import type { SubscriptionDraft } from "@/types/subscription";
 
 export const dynamic = "force-dynamic";
@@ -16,8 +16,8 @@ export async function PUT(request: Request, context: RouteContext) {
     if (!body.name?.trim()) {
       return NextResponse.json({ error: "name is required." }, { status: 400 });
     }
-    const db = await createSQLiteCloudDb(getConnectionString(request.headers));
-    return NextResponse.json(await updateSubscription(db, id, body));
+    const result = await withDb(getConnectionString(request.headers), (db) => updateSubscription(db, id, body));
+    return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to update subscription." }, { status: 500 });
   }
@@ -26,8 +26,7 @@ export async function PUT(request: Request, context: RouteContext) {
 export async function DELETE(request: Request, context: RouteContext) {
   try {
     const { id } = await context.params;
-    const db = await createSQLiteCloudDb(getConnectionString(request.headers));
-    await deleteSubscription(db, id);
+    await withDb(getConnectionString(request.headers), (db) => deleteSubscription(db, id));
     return NextResponse.json({ ok: true });
   } catch (error) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to delete subscription." }, { status: 500 });

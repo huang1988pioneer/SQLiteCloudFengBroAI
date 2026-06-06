@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import {
-  createSQLiteCloudDb,
   ensureSubscriptionTable,
   ensureWorkspaceTables,
   getConnectionString,
+  withDb,
   workspaceCreateTableSql,
 } from "@/lib/sqlite-cloud";
 import { subscriptionCreateTableSql } from "@/lib/subscription-schema";
@@ -14,9 +14,10 @@ export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const db = await createSQLiteCloudDb(getConnectionString(request.headers));
-    await ensureSubscriptionTable(db);
-    await ensureWorkspaceTables(db, workspaceModules);
+    await withDb(getConnectionString(request.headers), async (db) => {
+      await ensureSubscriptionTable(db);
+      await ensureWorkspaceTables(db, workspaceModules);
+    });
     return NextResponse.json({
       ok: true,
       tables: ["subscription", ...workspaceModules.map((module) => module.table)],

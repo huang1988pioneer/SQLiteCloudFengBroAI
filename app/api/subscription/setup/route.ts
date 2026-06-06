@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { subscriptionCreateTableSql, subscriptionSchema } from "@/lib/subscription-schema";
-import { createSQLiteCloudDb, ensureSubscriptionTable, getConnectionString } from "@/lib/sqlite-cloud";
+import { ensureSubscriptionTable, getConnectionString, withDb } from "@/lib/sqlite-cloud";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -8,8 +8,7 @@ export const runtime = "nodejs";
 export async function POST(request: Request) {
   try {
     const connectionString = getConnectionString(request.headers);
-    const db = await createSQLiteCloudDb(connectionString);
-    await ensureSubscriptionTable(db);
+    await withDb(connectionString, (db) => ensureSubscriptionTable(db));
 
     return NextResponse.json({
       ok: true,
