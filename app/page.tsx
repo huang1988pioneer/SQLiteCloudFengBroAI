@@ -31,6 +31,7 @@ import { subscriptionCreateTableSql, subscriptionSchema } from "@/lib/subscripti
 import type { FengBroSettings, Subscription, SubscriptionDraft } from "@/types/subscription";
 
 const settingsKey = "fengbro.sqlitecloud.settings";
+const financeKey = "fengbro.finance.margin-maintenance-rate";
 
 const emptyDraft: SubscriptionDraft = {
   name: "",
@@ -118,6 +119,7 @@ export default function Home() {
   const [syncingCloud, setSyncingCloud] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [rightCollapsed, setRightCollapsed] = useState(false);
+  const [financeMarginRate, setFinanceMarginRate] = useState<number | null>(null);
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(settingsKey);
@@ -127,6 +129,10 @@ export default function Home() {
         connectionString: parsed.connectionString || "",
         notificationDays: Number(parsed.notificationDays || defaultSettings.notificationDays),
       });
+    }
+    const savedMarginRate = Number(localStorage.getItem(financeKey) || "");
+    if (!Number.isNaN(savedMarginRate) && savedMarginRate > 0) {
+      setFinanceMarginRate(savedMarginRate);
     }
     setSettingsLoaded(true);
   }, []);
@@ -159,6 +165,7 @@ export default function Home() {
     : importProgress.phase === "done"
       ? 100
       : 0;
+  const shouldWarnFinanceMargin = financeMarginRate !== null && financeMarginRate <= 140;
 
   const flash = (message: string) => {
     setSavedSignal(message);
@@ -174,6 +181,15 @@ export default function Home() {
     const connectionString = settings.connectionString.trim();
     return connectionString ? { "x-sqlitecloud-connection": connectionString } : {};
   }, [settings.connectionString]);
+
+  const updateFinanceMarginRate = useCallback((value: number | null) => {
+    setFinanceMarginRate(value);
+    if (value === null) {
+      localStorage.removeItem(financeKey);
+      return;
+    }
+    localStorage.setItem(financeKey, String(value));
+  }, []);
 
   const normalizeCloudSubscription = (item: Subscription): Subscription => ({
     ...item,
@@ -491,9 +507,33 @@ export default function Home() {
           </div>
       </section>
 
+      {shouldWarnFinanceMargin ? (
+        <section className="home-alert finance-alert" role="alert" aria-live="polite">
+          <Bell size={19} />
+          <div>
+            <strong>大盤融資維持率 {financeMarginRate.toFixed(1)}%，已低於 140% 警戒線</strong>
+            <span>請留意追繳與市場波動風險，必要時降低槓桿或補足保證金。</span>
+          </div>
+        </section>
+      ) : financeMarginRate !== null ? (
+        <section className="home-alert finance-ok" aria-live="polite">
+          <Check size={19} />
+          <div>
+            <strong>大盤融資維持率 {financeMarginRate.toFixed(1)}%</strong>
+            <span>目前高於 140% 警戒線。</span>
+          </div>
+        </section>
+      ) : null}
+
       <section className={`content-grid ${rightCollapsed ? "right-collapsed" : ""}`}>
         <div className="main-column">
-            <WorkspaceModulePanel getCloudHeaders={getCloudHeaders} flash={flash} syncReady={settingsLoaded} />
+            <WorkspaceModulePanel
+              getCloudHeaders={getCloudHeaders}
+              flash={flash}
+              syncReady={settingsLoaded}
+              financeMarginRate={financeMarginRate}
+              onFinanceMarginRateChange={updateFinanceMarginRate}
+            />
 
             <section id="subscriptions" className="panel">
               <div className="panel-heading">

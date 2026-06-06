@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { AlertTriangle, Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { ArticleCardView } from "@/components/ArticleCardView";
 import { BankCardView } from "@/components/BankCardView";
 import { CommonAccountCardView } from "@/components/CommonAccountCardView";
@@ -22,6 +22,8 @@ type Props = {
   getCloudHeaders: () => Record<string, string>;
   flash: (message: string) => void;
   syncReady?: boolean;
+  financeMarginRate?: number | null;
+  onFinanceMarginRateChange?: (value: number | null) => void;
 };
 
 function emptyRecord(module: WorkspaceModule) {
@@ -38,7 +40,13 @@ function stringifyCell(value: unknown) {
   return String(value);
 }
 
-export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true }: Props) {
+export function WorkspaceModulePanel({
+  getCloudHeaders,
+  flash,
+  syncReady = true,
+  financeMarginRate = null,
+  onFinanceMarginRateChange,
+}: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeKey, setActiveKey] = useState(workspaceModules[0].key);
   const toolsActive = activeKey === "tools";
@@ -122,6 +130,7 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
   const isCommon = activeModule.key === "common";
   const isFood = activeModule.key === "food";
   const isRoutine = activeModule.key === "routine";
+  const financeRateText = financeMarginRate === null ? "" : String(financeMarginRate);
 
   const togglePin = async (record: WorkspaceRecord) => {
     const isPinned = Number(record.pinned || 0) === 1;
@@ -348,10 +357,41 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
           </div>
           <div className="tool-child-grid">
             {workspaceToolItems.map((item) => (
-              <button key={item.key} className="tool-child-card" type="button" onClick={() => flash(`${item.title} 子項目入口已建立`)}>
+              <div key={item.key} className={`tool-child-card ${item.key === "finance" ? "finance-tool-card" : ""}`}>
                 <strong>{item.title}</strong>
                 <span>{item.description}</span>
-              </button>
+                {item.key === "finance" ? (
+                  <div className="finance-tool-control">
+                    <label className="field">
+                      <span>大盤融資維持率</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.1"
+                        value={financeRateText}
+                        placeholder="例如 139.8"
+                        onChange={(event) => {
+                          const value = event.target.value.trim();
+                          const rate = Number(value);
+                          onFinanceMarginRateChange?.(value && !Number.isNaN(rate) ? rate : null);
+                        }}
+                      />
+                    </label>
+                    {financeMarginRate !== null && financeMarginRate <= 140 ? (
+                      <div className="finance-tool-warning" role="status">
+                        <AlertTriangle size={16} />
+                        <span>140% 以下，首頁會提示使用者。</span>
+                      </div>
+                    ) : financeMarginRate !== null ? (
+                      <div className="finance-tool-ok">目前高於 140% 警戒線。</div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <button className="button ghost tool-child-action" type="button" onClick={() => flash(`${item.title} 子項目入口已建立`)}>
+                    開啟
+                  </button>
+                )}
+              </div>
             ))}
           </div>
         </div>
