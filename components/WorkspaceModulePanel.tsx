@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { ArticleCardView } from "@/components/ArticleCardView";
+import { CommonAccountCardView } from "@/components/CommonAccountCardView";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
 import { workspaceModules, workspaceToolItems } from "@/lib/workspace-modules";
 import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
@@ -114,6 +115,7 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
   }, [activeModule, fetchRecords, syncReady, toolsActive]);
 
   const isArticle = activeModule.key === "article";
+  const isCommon = activeModule.key === "common";
 
   const togglePin = async (record: WorkspaceRecord) => {
     const isPinned = Number(record.pinned || 0) === 1;
@@ -448,6 +450,14 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
             onDelete={(record) => void deleteRecord(record)}
             onTogglePin={togglePin}
             onGenerateSummary={generateSummary}
+          />
+        ) : isCommon ? (
+          <CommonAccountCardView
+            records={records}
+            loading={loading}
+            onEdit={editRecord}
+            onDelete={(record) => void deleteRecord(record)}
+            flash={flash}
           />
         ) : (
         <div className="table-wrap module-table">
