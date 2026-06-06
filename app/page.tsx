@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   Check,
@@ -170,10 +170,10 @@ export default function Home() {
     if (!silent) flash("鋒兄設定已儲存");
   };
 
-  const getCloudHeaders = (): Record<string, string> => {
+  const getCloudHeaders = useCallback((): Record<string, string> => {
     const connectionString = settings.connectionString.trim();
     return connectionString ? { "x-sqlitecloud-connection": connectionString } : {};
-  };
+  }, [settings.connectionString]);
 
   const normalizeCloudSubscription = (item: Subscription): Subscription => ({
     ...item,
@@ -493,7 +493,7 @@ export default function Home() {
 
       <section className={`content-grid ${rightCollapsed ? "right-collapsed" : ""}`}>
         <div className="main-column">
-            <WorkspaceModulePanel getCloudHeaders={getCloudHeaders} flash={flash} />
+            <WorkspaceModulePanel getCloudHeaders={getCloudHeaders} flash={flash} syncReady={settingsLoaded} />
 
             <section id="subscriptions" className="panel">
               <div className="panel-heading">

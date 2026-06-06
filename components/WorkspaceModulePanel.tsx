@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Check, Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
 import { workspaceModules, workspaceToolItems } from "@/lib/workspace-modules";
@@ -16,6 +16,7 @@ type ImportProgress = {
 type Props = {
   getCloudHeaders: () => Record<string, string>;
   flash: (message: string) => void;
+  syncReady?: boolean;
 };
 
 function emptyRecord(module: WorkspaceModule) {
@@ -32,7 +33,7 @@ function stringifyCell(value: unknown) {
   return String(value);
 }
 
-export function WorkspaceModulePanel({ getCloudHeaders, flash }: Props) {
+export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeKey, setActiveKey] = useState(workspaceModules[0].key);
   const toolsActive = activeKey === "tools";
@@ -66,7 +67,7 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash }: Props) {
     }));
   };
 
-  const fetchRecords = async (module = activeModule, silent = false) => {
+  const fetchRecords = useCallback(async (module = activeModule, silent = false) => {
     setLoading(true);
     try {
       const response = await fetch(`/api/workspace/${module.key}?t=${Date.now()}`, {
@@ -84,7 +85,32 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash }: Props) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [activeModule, flash, getCloudHeaders]);
+
+  useEffect(() => {
+    if (!syncReady || toolsActive) return;
+    void fetchRecords(activeModule, true);
+  }, [activeModule, fetchRecords, syncReady, toolsActive]);
+
+  useEffect(() => {
+    if (!syncReady || toolsActive) return;
+
+    const refreshVisibleModule = () => {
+      if (document.visibilityState === "visible") {
+        void fetchRecords(activeModule, true);
+      }
+    };
+
+    const intervalId = window.setInterval(refreshVisibleModule, 15_000);
+    window.addEventListener("focus", refreshVisibleModule);
+    document.addEventListener("visibilitychange", refreshVisibleModule);
+
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener("focus", refreshVisibleModule);
+      document.removeEventListener("visibilitychange", refreshVisibleModule);
+    };
+  }, [activeModule, fetchRecords, syncReady, toolsActive]);
 
   const setupTables = async () => {
     setLoading(true);
