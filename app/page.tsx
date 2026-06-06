@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   Check,
   Copy,
   Database,
+  Download,
   ExternalLink,
   KeyRound,
   Pencil,
@@ -15,8 +16,14 @@ import {
   Settings,
   Table2,
   Trash2,
+  Upload,
   WalletCards,
 } from "lucide-react";
+import {
+  appwriteCsvHeaders,
+  parseAppwriteSubscriptionCsv,
+  stringifyAppwriteSubscriptionCsv,
+} from "@/lib/appwrite-csv";
 import { subscriptionCreateTableSql, subscriptionSchema } from "@/lib/subscription-schema";
 import type { FengBroSettings, Subscription, SubscriptionDraft } from "@/types/subscription";
 
@@ -139,12 +146,14 @@ function Field({
 }
 
 export default function Home() {
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>(seedSubscriptions);
   const [settings, setSettings] = useState<FengBroSettings>(defaultSettings);
   const [draft, setDraft] = useState<SubscriptionDraft>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
   const [savedSignal, setSavedSignal] = useState("");
+  const [csvErrors, setCsvErrors] = useState<string[]>([]);
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(settingsKey);
@@ -180,10 +189,14 @@ export default function Home() {
     return { active: active.length, soon: soon.length, total };
   }, [settings.notificationDays, subscriptions]);
 
+  const flash = (message: string) => {
+    setSavedSignal(message);
+    window.setTimeout(() => setSavedSignal(""), 1800);
+  };
+
   const saveSettings = () => {
     localStorage.setItem(settingsKey, JSON.stringify(settings));
-    setSavedSignal("鋒兄設定已儲存");
-    window.setTimeout(() => setSavedSignal(""), 1800);
+    flash("鋒兄設定已儲存");
   };
 
   const saveDraft = () => {
@@ -219,8 +232,34 @@ export default function Home() {
 
   const copySql = async () => {
     await navigator.clipboard.writeText(subscriptionCreateTableSql);
-    setSavedSignal("SQL 已複製");
-    window.setTimeout(() => setSavedSignal(""), 1800);
+    flash("SQL 已複製");
+  };
+
+  const exportCsv = () => {
+    const csv = stringifyAppwriteSubscriptionCsv(subscriptions);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `appwrite-subscription-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    flash("已匯出 Appwrite CSV");
+  };
+
+  const importCsvFile = async (file: File) => {
+    const text = await file.text();
+    const result = parseAppwriteSubscriptionCsv(text);
+    setCsvErrors(result.errors);
+    if (result.rows.length === 0) {
+      flash("沒有可匯入的訂閱資料");
+      return;
+    }
+    const imported = result.rows.map((row) => buildSubscription(row));
+    setSubscriptions((items) => [...imported, ...items]);
+    flash(`已匯入 ${imported.length} 筆 Appwrite CSV`);
   };
 
   return (
@@ -248,7 +287,7 @@ export default function Home() {
         <header className="topbar">
           <div>
             <h1>鋒兄訂閱</h1>
-            <p>參考 Appwrite 版訂閱管理，改為 SQLiteCloud 導向的精簡產品工作台。</p>
+            <p>相容 Appwrite 版 subscription CSV，並改為 SQLiteCloud 導向的精簡產品工作台。</p>
           </div>
           <button className="button primary" onClick={saveDraft}>
             <Plus size={17} />
@@ -279,11 +318,44 @@ export default function Home() {
                   <h2>訂閱清單</h2>
                   <p>管理服務、帳號、扣款日期、續訂狀態與備註。</p>
                 </div>
-                <div className="search">
-                  <Search size={17} />
-                  <input value={query} placeholder="搜尋服務、帳號、備註" onChange={(event) => setQuery(event.target.value)} />
+                <div className="panel-tools">
+                  <div className="search">
+                    <Search size={17} />
+                    <input value={query} placeholder="搜尋服務、帳號、備註" onChange={(event) => setQuery(event.target.value)} />
+                  </div>
+                  <input
+                    ref={importInputRef}
+                    type="file"
+                    accept=".csv,text/csv"
+                    className="file-input"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (file) void importCsvFile(file);
+                      event.currentTarget.value = "";
+                    }}
+                  />
+                  <button className="button ghost" onClick={() => importInputRef.current?.click()}>
+                    <Upload size={16} />
+                    匯入 CSV
+                  </button>
+                  <button className="button ghost" onClick={exportCsv}>
+                    <Download size={16} />
+                    匯出 CSV
+                  </button>
                 </div>
               </div>
+
+              <div className="csv-hint">
+                <strong>Appwrite CSV 相容欄位</strong>
+                <code>{appwriteCsvHeaders.join(",")}</code>
+                <span>支援 quoted 多行備註，例如你的 `note` 欄含換行、逗號或全形數字都可匯入並原樣匯出。</span>
+              </div>
+
+              {csvErrors.length > 0 ? (
+                <div className="csv-errors">
+                  {csvErrors.map((error) => <div key={error}>{error}</div>)}
+                </div>
+              ) : null}
 
               <div className="form-strip">
                 <Field label="服務名稱" value={draft.name} placeholder="ChatGPT Plus" onChange={(value) => setDraft({ ...draft, name: value })} />
@@ -294,7 +366,7 @@ export default function Home() {
                 <Field label="帳號 / Email" value={draft.account} onChange={(value) => setDraft({ ...draft, account: value })} />
                 <label className="field field-wide">
                   <span>備註</span>
-                  <input value={draft.note} placeholder="付款方式、方案或提醒" onChange={(event) => setDraft({ ...draft, note: event.target.value })} />
+                  <textarea value={draft.note} placeholder="付款方式、方案或提醒" onChange={(event) => setDraft({ ...draft, note: event.target.value })} />
                 </label>
                 <label className="toggle">
                   <input type="checkbox" checked={draft.continue} onChange={(event) => setDraft({ ...draft, continue: event.target.checked })} />
@@ -343,7 +415,7 @@ export default function Home() {
                           <td>{currencyLabel(subscription.price, subscription.currency)}</td>
                           <td><span className={days <= settings.notificationDays ? "due hot" : "due"}>{status}</span></td>
                           <td><span className={subscription.continue ? "pill ok" : "pill muted"}>{subscription.continue ? "續訂" : "停止"}</span></td>
-                          <td>{subscription.note || "-"}</td>
+                          <td className="note-cell">{subscription.note || "-"}</td>
                           <td>
                             <div className="row-actions">
                               <button aria-label="編輯" onClick={() => editSubscription(subscription)}><Pencil size={15} /></button>
@@ -395,7 +467,7 @@ export default function Home() {
             <Field label="到期提醒天數" type="number" value={settings.notificationDays} onChange={(value) => setSettings({ ...settings, notificationDays: Number(value || 0) })} />
             <div className="settings-actions">
               <button className="button primary" onClick={saveSettings}><Check size={16} />儲存設定</button>
-              <button className="button ghost" onClick={() => setSavedSignal("連線測試入口已建立，可接 SQLiteCloud route")}>
+              <button className="button ghost" onClick={() => flash("連線測試入口已建立，可接 SQLiteCloud route")}>
                 <RefreshCw size={16} />
                 測試
               </button>
