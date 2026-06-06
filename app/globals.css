@@ -397,6 +397,49 @@ h2 {
   max-height: 520px;
 }
 
+.tool-menu-body {
+  background: #fbfcfe;
+}
+
+.tool-menu-summary {
+  grid-template-columns: 1fr;
+}
+
+.tool-child-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px;
+}
+
+.tool-child-card {
+  display: grid;
+  gap: 7px;
+  min-height: 96px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  padding: 16px;
+  text-align: left;
+}
+
+.tool-child-card:hover {
+  border-color: rgba(15, 118, 110, 0.35);
+  background: #f0fdfa;
+}
+
+.tool-child-card strong {
+  color: var(--teal-strong);
+  font-size: 17px;
+}
+
+.tool-child-card span {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
 .empty-cell {
   color: var(--muted);
   font-weight: 700;
@@ -958,7 +1001,8 @@ code {
   .metrics,
   .form-strip,
   .module-tabs,
-  .module-form {
+  .module-form,
+  .tool-child-grid {
     grid-template-columns: 1fr;
   }
 

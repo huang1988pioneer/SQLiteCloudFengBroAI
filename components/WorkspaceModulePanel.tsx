@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState } from "react";
 import { Check, Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
-import { workspaceModules } from "@/lib/workspace-modules";
+import { workspaceModules, workspaceToolItems } from "@/lib/workspace-modules";
 import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
 
 type ImportProgress = {
@@ -35,6 +35,7 @@ function stringifyCell(value: unknown) {
 export function WorkspaceModulePanel({ getCloudHeaders, flash }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeKey, setActiveKey] = useState(workspaceModules[0].key);
+  const toolsActive = activeKey === "tools";
   const activeModule = workspaceModules.find((module) => module.key === activeKey) || workspaceModules[0];
   const [recordsByModule, setRecordsByModule] = useState<Record<string, WorkspaceRecord[]>>({});
   const [draftByModule, setDraftByModule] = useState<Record<string, Record<string, unknown>>>({});
@@ -224,12 +225,19 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash }: Props) {
     if (!recordsByModule[module.key]) void fetchRecords(module, true);
   };
 
+  const switchTools = () => {
+    setActiveKey("tools");
+    setEditingId(null);
+    setCsvErrors([]);
+    setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
+  };
+
   return (
     <section id="workspace-modules" className="panel module-panel">
       <div className="panel-heading module-heading">
         <div>
           <h2>鋒兄工作台</h2>
-          <p>食品、筆記、常用、銀行、例行、工具、比價、Tube、金融皆直接寫入 SQLiteCloud。</p>
+          <p>食品、筆記、常用、銀行、例行直接寫入 SQLiteCloud；鋒兄工具提供比價、手機、Tube、金融子項目。</p>
         </div>
         <button className="button primary" onClick={setupTables} disabled={loading}>
           <Check size={16} />
@@ -241,14 +249,35 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash }: Props) {
         {workspaceModules.map((module) => (
           <button
             key={module.key}
-            className={module.key === activeModule.key ? "active" : ""}
+            className={!toolsActive && module.key === activeModule.key ? "active" : ""}
             onClick={() => switchModule(module)}
           >
             {module.shortTitle}
           </button>
         ))}
+        <button className={toolsActive ? "active" : ""} onClick={switchTools}>
+          工具
+        </button>
       </div>
 
+      {toolsActive ? (
+        <div className="module-body tool-menu-body">
+          <div className="module-summary tool-menu-summary">
+            <div>
+              <strong>鋒兄工具</strong>
+              <span>工具不是 SQLiteCloud table；下列為子項目入口，避免與資料表模組混在一起。</span>
+            </div>
+          </div>
+          <div className="tool-child-grid">
+            {workspaceToolItems.map((item) => (
+              <button key={item.key} className="tool-child-card" type="button" onClick={() => flash(`${item.title} 子項目入口已建立`)}>
+                <strong>{item.title}</strong>
+                <span>{item.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
       <div className="module-body">
         <div className="module-summary">
           <div>
@@ -374,6 +403,7 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash }: Props) {
           </table>
         </div>
       </div>
+      )}
     </section>
   );
 }
