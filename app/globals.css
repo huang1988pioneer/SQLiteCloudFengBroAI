@@ -180,6 +180,11 @@ h2 {
   color: white;
 }
 
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .button.ghost:hover,
 .row-actions button:hover {
   background: var(--surface-strong);
@@ -523,6 +528,17 @@ code {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
+}
+
+.setup-button {
+  width: 100%;
+  border-color: #b7ded9;
+  background: #e8f3f2;
+  color: var(--teal-strong);
+}
+
+.setup-button:hover {
+  background: #d9ece9;
 }
 
 .notice {

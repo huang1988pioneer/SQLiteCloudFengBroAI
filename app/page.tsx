@@ -154,6 +154,7 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [savedSignal, setSavedSignal] = useState("");
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
+  const [creatingTable, setCreatingTable] = useState(false);
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(settingsKey);
@@ -197,6 +198,34 @@ export default function Home() {
   const saveSettings = () => {
     localStorage.setItem(settingsKey, JSON.stringify(settings));
     flash("鋒兄設定已儲存");
+  };
+
+  const createSubscriptionTable = async () => {
+    const connectionString = settings.connectionString.trim();
+    if (!connectionString) {
+      flash("請先輸入 SQLiteCloud Connection String");
+      return;
+    }
+
+    setCreatingTable(true);
+    try {
+      saveSettings();
+      const response = await fetch("/api/subscription/setup", {
+        method: "POST",
+        headers: {
+          "x-sqlitecloud-connection": connectionString,
+        },
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        throw new Error(result.error || "建立 Table Subscription 失敗");
+      }
+      flash("Table subscription 已建立或確認存在");
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "建立 Table Subscription 失敗");
+    } finally {
+      setCreatingTable(false);
+    }
   };
 
   const saveDraft = () => {
@@ -472,6 +501,10 @@ export default function Home() {
                 測試
               </button>
             </div>
+            <button className="button setup-button" onClick={createSubscriptionTable} disabled={creatingTable}>
+              <Database size={16} />
+              {creatingTable ? "生成中..." : "一鍵生成 Table Subscription"}
+            </button>
             <div className="notice">
               <Bell size={17} />
               <p>部署後可將 connection string 設為 `SQLITE_CLOUD_CONNECTION_STRING`，或由前端設定透過 header 傳給 API route。</p>
