@@ -1635,3 +1635,207 @@ code {
     flex-wrap: wrap;
   }
 }
+
+/* ─── Food Card View (鋒兄食品) ─── */
+
+.food-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 18px;
+}
+
+.food-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.food-card:hover {
+  box-shadow: 0 6px 24px rgba(30, 41, 59, 0.1);
+  transform: translateY(-2px);
+}
+
+.food-card.food-expired {
+  border-color: #fca5a5;
+}
+
+.food-card.food-expiring-soon {
+  border-color: #fcd34d;
+}
+
+.food-card.food-ok {
+  border-color: #6ee7b7;
+}
+
+/* Photo area */
+.food-card-photo {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  background: #f1f5f9;
+  overflow: hidden;
+}
+
+.food-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 250ms ease;
+}
+
+.food-card:hover .food-card-photo img {
+  transform: scale(1.04);
+}
+
+.food-card-no-photo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  color: #94a3b8;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+}
+
+/* Expiry badge overlay */
+.food-expiry-badge {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 750;
+  padding: 4px 9px;
+  backdrop-filter: blur(4px);
+}
+
+.food-expiry-badge.food-expired {
+  background: rgba(220, 38, 38, 0.88);
+  color: white;
+}
+
+.food-expiry-badge.food-expiring-soon {
+  background: rgba(217, 119, 6, 0.88);
+  color: white;
+}
+
+.food-expiry-badge.food-ok {
+  background: rgba(5, 150, 105, 0.85);
+  color: white;
+}
+
+/* Info section */
+.food-card-info {
+  display: grid;
+  gap: 8px;
+  flex: 1;
+  padding: 12px 14px;
+}
+
+.food-card-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1.35;
+  color: var(--ink);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.food-card-meta {
+  display: grid;
+  gap: 5px;
+}
+
+.food-meta-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.food-meta-item svg {
+  flex: 0 0 auto;
+  color: #94a3b8;
+}
+
+/* Actions */
+.food-card-actions {
+  display: flex;
+  gap: 6px;
+  border-top: 1px solid var(--line-soft);
+  padding: 10px 12px;
+}
+
+.food-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  justify-content: center;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: #475467;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 120ms ease;
+}
+
+.food-action-button:hover {
+  background: var(--surface-strong);
+}
+
+.food-action-delete {
+  border-color: #fca5a5;
+  background: #dc2626;
+  color: white;
+}
+
+.food-action-delete:hover {
+  background: #b91c1c;
+}
+
+.food-action-delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Empty state */
+.food-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+  padding: 40px 18px;
+  color: var(--muted);
+}
+
+.food-empty p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .food-card-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    padding: 12px;
+  }
+}

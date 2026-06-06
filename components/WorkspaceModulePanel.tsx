@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { ArticleCardView } from "@/components/ArticleCardView";
 import { CommonAccountCardView } from "@/components/CommonAccountCardView";
+import { FoodCardView } from "@/components/FoodCardView";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
 import { workspaceModules, workspaceToolItems } from "@/lib/workspace-modules";
 import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
@@ -116,6 +117,7 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
 
   const isArticle = activeModule.key === "article";
   const isCommon = activeModule.key === "common";
+  const isFood = activeModule.key === "food";
 
   const togglePin = async (record: WorkspaceRecord) => {
     const isPinned = Number(record.pinned || 0) === 1;
@@ -458,6 +460,13 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
             onEdit={editRecord}
             onDelete={(record) => void deleteRecord(record)}
             flash={flash}
+          />
+        ) : isFood ? (
+          <FoodCardView
+            records={records}
+            loading={loading}
+            onEdit={editRecord}
+            onDelete={(record) => void deleteRecord(record)}
           />
         ) : (
         <div className="table-wrap module-table">
