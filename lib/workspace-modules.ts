@@ -74,9 +74,8 @@ export const workspaceModules: WorkspaceModule[] = [
     description: "銀行、餘額、轉帳提款優惠、金融卡與電子票證。",
     csvName: "appwrite-bank",
     fields: [
-      { name: "name", label: "銀行 / 票證", type: "text", required: true },
+      { name: "name", label: "銀行 / 票證（可含網址）", type: "text", required: true },
       { name: "deposit", label: "餘額", type: "number" },
-      { name: "site", label: "網站", type: "url" },
       { name: "address", label: "地址", type: "text" },
       { name: "withdrawals", label: "提款次數", type: "number" },
       { name: "transfer", label: "轉帳次數", type: "number" },

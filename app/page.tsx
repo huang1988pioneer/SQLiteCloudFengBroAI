@@ -567,7 +567,6 @@ export default function Home() {
 
               <div className="form-strip">
                 <Field label="服務名稱" value={draft.name} placeholder="ChatGPT Plus" onChange={(value) => setDraft({ ...draft, name: value })} />
-                <Field label="網站" value={draft.site} placeholder="https://example.com" onChange={(value) => setDraft({ ...draft, site: value })} />
                 <Field label="金額" type="number" value={draft.price} onChange={(value) => setDraft({ ...draft, price: Number(value) })} />
                 <Field label="幣別" value={draft.currency} placeholder="TWD" onChange={(value) => setDraft({ ...draft, currency: value.toUpperCase() })} />
                 <Field label="下次扣款" type="date" value={draft.nextdate} onChange={(value) => setDraft({ ...draft, nextdate: value })} />
@@ -598,7 +597,6 @@ export default function Home() {
                   <thead>
                     <tr>
                       <th>服務名稱</th>
-                      <th>網站</th>
                       <th>帳號</th>
                       <th>金額</th>
                       <th>下次扣款</th>
@@ -620,15 +618,14 @@ export default function Home() {
                       return (
                         <tr key={subscription.id}>
                           <td>
-                            <strong>{subscription.name}</strong>
-                            <small>{subscription.id}</small>
-                          </td>
-                          <td>
                             {subscription.site ? (
-                              <a href={subscription.site} target="_blank" rel="noreferrer">
-                                開啟 <ExternalLink size={13} />
+                              <a href={subscription.site} target="_blank" rel="noreferrer" style={{ fontWeight: 600, display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                                {subscription.name} <ExternalLink size={13} />
                               </a>
-                            ) : "-"}
+                            ) : (
+                              <strong>{subscription.name}</strong>
+                            )}
+                            <small>{subscription.id}</small>
                           </td>
                           <td>{subscription.account || "-"}</td>
                           <td>{currencyLabel(subscription.price, subscription.currency)}</td>
