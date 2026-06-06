@@ -1,7 +1,8 @@
 import { subscriptionCreateTableSql } from "@/lib/subscription-schema";
 import type { Subscription, SubscriptionDraft } from "@/types/subscription";
+import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
 
-type SQLiteCloudDb = {
+export type SQLiteCloudDb = {
   sql: (query: string) => Promise<unknown>;
 };
 
@@ -35,12 +36,29 @@ function nullable(value: string) {
   return value.trim() ? quote(value.trim()) : "NULL";
 }
 
-export function normalizeRows(result: unknown): Subscription[] {
-  if (Array.isArray(result)) return result as Subscription[];
+function sqlIdentifier(value: string) {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+function fieldSqlType(type: string) {
+  return type === "number" ? "REAL" : "TEXT";
+}
+
+function sqlValue(value: unknown, type: string) {
+  if (type === "number") {
+    const number = Number(value || 0);
+    return Number.isNaN(number) ? "0" : String(number);
+  }
+  const text = String(value ?? "").trim();
+  return text ? quote(text) : "NULL";
+}
+
+export function normalizeRows<T = Record<string, unknown>>(result: unknown): T[] {
+  if (Array.isArray(result)) return result as T[];
   if (result && typeof result === "object") {
     const candidate = result as { rows?: unknown; values?: unknown };
-    if (Array.isArray(candidate.rows)) return candidate.rows as Subscription[];
-    if (Array.isArray(candidate.values)) return candidate.values as Subscription[];
+    if (Array.isArray(candidate.rows)) return candidate.rows as T[];
+    if (Array.isArray(candidate.values)) return candidate.values as T[];
   }
   return [];
 }
@@ -98,4 +116,67 @@ export async function updateSubscription(db: SQLiteCloudDb, id: string, draft: S
 export async function deleteSubscription(db: SQLiteCloudDb, id: string) {
   await ensureSubscriptionTable(db);
   await db.sql(`DELETE FROM subscription WHERE id = ${quote(id)}`);
+}
+
+export function workspaceCreateTableSql(module: WorkspaceModule) {
+  const columns = module.fields.map((field) => {
+    const required = field.required ? " NOT NULL" : "";
+    return `${sqlIdentifier(field.name)} ${fieldSqlType(field.type)}${required}`;
+  });
+  return `CREATE TABLE IF NOT EXISTS ${sqlIdentifier(module.table)} (
+  id TEXT PRIMARY KEY,
+  ${columns.join(",\n  ")},
+  created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+)`;
+}
+
+export async function ensureWorkspaceTable(db: SQLiteCloudDb, module: WorkspaceModule) {
+  await db.sql(workspaceCreateTableSql(module));
+}
+
+export async function ensureWorkspaceTables(db: SQLiteCloudDb, modules: WorkspaceModule[]) {
+  for (const module of modules) {
+    await ensureWorkspaceTable(db, module);
+  }
+}
+
+export async function listWorkspaceRecords(db: SQLiteCloudDb, module: WorkspaceModule) {
+  await ensureWorkspaceTable(db, module);
+  const firstDate = module.fields.find((field) => field.type === "date")?.name;
+  const primary = module.fields[0]?.name || "id";
+  const order = firstDate
+    ? `ORDER BY COALESCE(${sqlIdentifier(firstDate)}, '9999-12-31') ASC, ${sqlIdentifier(primary)} ASC`
+    : `ORDER BY ${sqlIdentifier(primary)} ASC`;
+  return normalizeRows<WorkspaceRecord>(await db.sql(`SELECT * FROM ${sqlIdentifier(module.table)} ${order}`));
+}
+
+export async function createWorkspaceRecord(db: SQLiteCloudDb, module: WorkspaceModule, record: Record<string, unknown> & { id?: string }) {
+  await ensureWorkspaceTable(db, module);
+  const id = record.id || crypto.randomUUID();
+  const now = new Date().toISOString();
+  const columns = module.fields.map((field) => sqlIdentifier(field.name));
+  const values = module.fields.map((field) => sqlValue(record[field.name], field.type));
+  await db.sql(`INSERT OR REPLACE INTO ${sqlIdentifier(module.table)} (
+    id, ${columns.join(", ")}, created_at, updated_at
+  ) VALUES (
+    ${quote(id)}, ${values.join(", ")}, ${quote(now)}, ${quote(now)}
+  )`);
+  return { id, ...record, created_at: now, updated_at: now };
+}
+
+export async function updateWorkspaceRecord(db: SQLiteCloudDb, module: WorkspaceModule, id: string, record: Record<string, unknown>) {
+  await ensureWorkspaceTable(db, module);
+  const now = new Date().toISOString();
+  const assignments = module.fields.map((field) => `${sqlIdentifier(field.name)} = ${sqlValue(record[field.name], field.type)}`);
+  await db.sql(`UPDATE ${sqlIdentifier(module.table)} SET
+    ${assignments.join(",\n    ")},
+    updated_at = ${quote(now)}
+    WHERE id = ${quote(id)}`);
+  return { id, ...record, updated_at: now };
+}
+
+export async function deleteWorkspaceRecord(db: SQLiteCloudDb, module: WorkspaceModule, id: string) {
+  await ensureWorkspaceTable(db, module);
+  await db.sql(`DELETE FROM ${sqlIdentifier(module.table)} WHERE id = ${quote(id)}`);
 }

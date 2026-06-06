@@ -295,6 +295,114 @@ h2 {
   overflow: hidden;
 }
 
+.module-panel {
+  display: grid;
+}
+
+.module-heading {
+  align-items: start;
+}
+
+.module-tabs {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  background: #f8fbfb;
+  padding: 12px 18px;
+}
+
+.module-tabs button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.module-tabs button.active {
+  border-color: rgba(15, 118, 110, 0.28);
+  background: #e7f4f2;
+  color: #0f766e;
+}
+
+.module-body {
+  display: grid;
+}
+
+.module-summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 14px;
+  align-items: center;
+  border-bottom: 1px solid var(--line-soft);
+  padding: 16px 18px;
+}
+
+.module-summary > div:first-child {
+  display: grid;
+  gap: 4px;
+}
+
+.module-summary strong {
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.module-summary span {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.module-stat {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.module-stat span {
+  border-radius: 999px;
+  background: #eef6f5;
+  color: #0f766e;
+  font-weight: 800;
+  padding: 7px 10px;
+}
+
+.module-tools {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.module-csv-hint {
+  background: #fbfcfe;
+}
+
+.module-form {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  max-height: 420px;
+  overflow: auto;
+  border-bottom: 1px solid var(--line-soft);
+  background: #fbfcfe;
+  padding: 18px;
+}
+
+.module-table {
+  max-height: 520px;
+}
+
+.empty-cell {
+  color: var(--muted);
+  font-weight: 700;
+  text-align: center;
+}
+
 .settings-panel {
   position: sticky;
   top: 24px;
@@ -610,6 +718,18 @@ td a {
   font-weight: 750;
 }
 
+.nextdate-stack {
+  display: grid;
+  gap: 4px;
+  min-width: 96px;
+}
+
+.nextdate-stack > span:first-child {
+  color: var(--ink);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
 .pill {
   display: inline-flex;
   justify-self: start;
@@ -785,6 +905,15 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .module-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .module-stat,
+  .module-tools {
+    justify-content: flex-start;
+  }
+
   .settings-panel {
     position: static;
   }
@@ -827,7 +956,9 @@ code {
   }
 
   .metrics,
-  .form-strip {
+  .form-strip,
+  .module-tabs,
+  .module-form {
     grid-template-columns: 1fr;
   }
 

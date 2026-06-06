@@ -28,6 +28,7 @@ import {
   parseAppwriteSubscriptionCsv,
   stringifyAppwriteSubscriptionCsv,
 } from "@/lib/appwrite-csv";
+import { WorkspaceModulePanel } from "@/components/WorkspaceModulePanel";
 import { subscriptionCreateTableSql, subscriptionSchema } from "@/lib/subscription-schema";
 import type { FengBroSettings, Subscription, SubscriptionDraft } from "@/types/subscription";
 
@@ -152,7 +153,7 @@ export default function Home() {
       return days >= 0 && days <= settings.notificationDays;
     });
     const total = active.reduce((sum, item) => sum + toTwd(item), 0);
-    return { active: active.length, soon: soon.length, total };
+    return { active: subscriptions.length, soon: soon.length, total };
   }, [settings.notificationDays, subscriptions]);
 
   const importPercent = importProgress.total
@@ -450,6 +451,7 @@ export default function Home() {
         </div>
         <nav aria-label="主選單">
           <a className="nav-item active" href="#subscriptions" title="鋒兄訂閱"><WalletCards size={18} /><span>鋒兄訂閱</span></a>
+          <a className="nav-item" href="#workspace-modules" title="鋒兄工作台"><Database size={18} /><span>鋒兄工作台</span></a>
           <a className="nav-item" href="#settings" title="鋒兄設定"><Settings size={18} /><span>鋒兄設定</span></a>
           <a className="nav-item" href="#schema" title="Table 建議"><Table2 size={18} /><span>Table 建議</span></a>
         </nav>
@@ -471,9 +473,9 @@ export default function Home() {
           </button>
         </header>
 
-        <section className="metrics" aria-label="訂閱摘要">
+      <section className="metrics" aria-label="訂閱摘要">
           <div className="metric">
-            <span>啟用訂閱</span>
+            <span>訂閱總數</span>
             <strong>{stats.active}</strong>
           </div>
           <div className="metric">
@@ -484,10 +486,12 @@ export default function Home() {
             <span>約當月費</span>
             <strong>{currencyLabel(stats.total, "TWD")}</strong>
           </div>
-        </section>
+      </section>
 
-        <section className={`content-grid ${rightCollapsed ? "right-collapsed" : ""}`}>
-          <div className="main-column">
+      <section className={`content-grid ${rightCollapsed ? "right-collapsed" : ""}`}>
+        <div className="main-column">
+            <WorkspaceModulePanel getCloudHeaders={getCloudHeaders} flash={flash} />
+
             <section id="subscriptions" className="panel">
               <div className="panel-heading">
                 <div>
@@ -625,7 +629,12 @@ export default function Home() {
                           </td>
                           <td>{subscription.account || "-"}</td>
                           <td>{currencyLabel(subscription.price, subscription.currency)}</td>
-                          <td><span className={days <= settings.notificationDays ? "due hot" : "due"}>{status}</span></td>
+                          <td>
+                            <div className="nextdate-stack">
+                              <span>{subscription.nextdate || "-"}</span>
+                              <span className={days <= settings.notificationDays ? "due hot" : "due"}>{status}</span>
+                            </div>
+                          </td>
                           <td><span className={subscription.continue ? "pill ok" : "pill muted"}>{subscription.continue ? "續訂" : "停止"}</span></td>
                           <td className="note-cell">{subscription.note || "-"}</td>
                           <td>
