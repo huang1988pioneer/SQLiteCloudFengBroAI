@@ -388,6 +388,77 @@ h2 {
   white-space: nowrap;
 }
 
+.import-progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px 14px;
+  align-items: center;
+  border-bottom: 1px solid var(--line-soft);
+  background: #f8fafc;
+  color: #475467;
+  font-size: 13px;
+  padding: 12px 18px 14px;
+}
+
+.import-progress-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.import-progress-copy strong {
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.import-progress-copy span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.import-progress-count {
+  color: #0f766e;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.import-progress-track {
+  grid-column: 1 / -1;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.import-progress-track div {
+  height: 100%;
+  border-radius: inherit;
+  background: #0f766e;
+  transition: width 180ms ease;
+}
+
+.import-progress-done {
+  background: #f0fdf4;
+}
+
+.import-progress-done .import-progress-count,
+.import-progress-done .import-progress-track div {
+  color: #047857;
+  background: #10b981;
+}
+
+.import-progress-error {
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.import-progress-error .import-progress-count,
+.import-progress-error .import-progress-track div {
+  color: #9a3412;
+  background: #f97316;
+}
+
 .csv-errors {
   display: grid;
   gap: 4px;

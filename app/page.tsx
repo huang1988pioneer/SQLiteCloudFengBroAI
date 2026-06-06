@@ -49,6 +49,13 @@ const defaultSettings: FengBroSettings = {
   notificationDays: 7,
 };
 
+type ImportProgress = {
+  phase: "idle" | "parsing" | "creating-table" | "importing" | "reloading" | "done" | "error";
+  current: number;
+  total: number;
+  label: string;
+};
+
 function daysUntil(dateValue: string) {
   if (!dateValue) return Number.POSITIVE_INFINITY;
   const today = new Date();
@@ -102,6 +109,12 @@ export default function Home() {
   const [query, setQuery] = useState("");
   const [savedSignal, setSavedSignal] = useState("");
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
+  const [importProgress, setImportProgress] = useState<ImportProgress>({
+    phase: "idle",
+    current: 0,
+    total: 0,
+    label: "",
+  });
   const [creatingTable, setCreatingTable] = useState(false);
   const [syncingCloud, setSyncingCloud] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
@@ -142,14 +155,20 @@ export default function Home() {
     return { active: active.length, soon: soon.length, total };
   }, [settings.notificationDays, subscriptions]);
 
+  const importPercent = importProgress.total
+    ? Math.min(100, Math.round((importProgress.current / importProgress.total) * 100))
+    : importProgress.phase === "done"
+      ? 100
+      : 0;
+
   const flash = (message: string) => {
     setSavedSignal(message);
     window.setTimeout(() => setSavedSignal(""), 1800);
   };
 
-  const saveSettings = () => {
+  const saveSettings = ({ silent = false } = {}) => {
     localStorage.setItem(settingsKey, JSON.stringify(settings));
-    flash("鋒兄設定已儲存");
+    if (!silent) flash("鋒兄設定已儲存");
   };
 
   const getCloudHeaders = (): Record<string, string> => {
@@ -186,7 +205,7 @@ export default function Home() {
   const createSubscriptionTable = async () => {
     setCreatingTable(true);
     try {
-      saveSettings();
+      saveSettings({ silent: true });
       await setupSubscriptionTable();
       flash("Table subscription 已建立或確認存在");
     } catch (error) {
@@ -238,10 +257,11 @@ export default function Home() {
     void loadDefaultConnection();
   }, [settings.connectionString, settingsLoaded]);
 
-  const importRowsToCloud = async (rows: SubscriptionDraft[]) => {
+  const importRowsToCloud = async (rows: SubscriptionDraft[], onProgress?: (current: number, row: SubscriptionDraft) => void) => {
     await setupSubscriptionTable();
     const importedCloudRows: Subscription[] = [];
-    for (const row of rows) {
+    for (const [index, row] of rows.entries()) {
+      onProgress?.(index + 1, row);
       const response = await fetch("/api/subscription", {
         method: "POST",
         headers: {
@@ -354,21 +374,56 @@ export default function Home() {
   };
 
   const importCsvFile = async (file: File) => {
+    setImportProgress({ phase: "parsing", current: 0, total: 0, label: `正在解析 ${file.name}` });
     const text = await file.text();
     const result = parseAppwriteSubscriptionCsv(text);
     setCsvErrors(result.errors);
     if (result.rows.length === 0) {
+      setImportProgress({ phase: "error", current: 0, total: 0, label: "CSV 沒有可匯入的訂閱資料" });
       flash("沒有可匯入的訂閱資料");
       return;
     }
+    let importedCount = 0;
     setSyncingCloud(true);
     try {
-      saveSettings();
-      const importedCloudRows = await importRowsToCloud(result.rows);
+      saveSettings({ silent: true });
+      setImportProgress({
+        phase: "creating-table",
+        current: 0,
+        total: result.rows.length,
+        label: "正在確認 SQLiteCloud subscription table",
+      });
+      const importedCloudRows = await importRowsToCloud(result.rows, (current, row) => {
+        importedCount = current;
+        setImportProgress({
+          phase: "importing",
+          current,
+          total: result.rows.length,
+          label: `正在匯入 ${row.name || `第 ${current} 筆`}`,
+        });
+      });
+      setImportProgress({
+        phase: "reloading",
+        current: importedCloudRows.length,
+        total: result.rows.length,
+        label: "正在重新載入 SQLiteCloud 資料",
+      });
       const nextSubscriptions = await fetchCloudSubscriptions();
       setSubscriptions(nextSubscriptions);
+      setImportProgress({
+        phase: "done",
+        current: importedCloudRows.length,
+        total: result.rows.length,
+        label: `已匯入 ${importedCloudRows.length} 筆到 SQLiteCloud 資料庫`,
+      });
       flash(`已直接匯入 ${importedCloudRows.length} 筆到 SQLiteCloud 資料庫`);
     } catch (error) {
+      setImportProgress({
+        phase: "error",
+        current: importedCount,
+        total: result.rows.length,
+        label: error instanceof Error ? error.message : "匯入 SQLiteCloud 失敗",
+      });
       flash(error instanceof Error ? error.message : "匯入 SQLiteCloud 失敗");
     } finally {
       setSyncingCloud(false);
@@ -457,7 +512,7 @@ export default function Home() {
                   />
                   <button className="button ghost" onClick={() => importInputRef.current?.click()} disabled={syncingCloud}>
                     <Upload size={16} />
-                    直接匯入資料庫
+                    {syncingCloud ? "匯入中..." : "直接匯入資料庫"}
                   </button>
                   <button className="button ghost" onClick={exportCsv}>
                     <Download size={16} />
@@ -475,6 +530,27 @@ export default function Home() {
                 <code>{appwriteCsvHeaders.join(",")}</code>
                 <span>CSV 匯入會直接寫入 SQLiteCloud；可用鋒兄設定覆蓋，或在 Vercel 設定 SQLITECLOUD_CONNECTION_STRING。</span>
               </div>
+
+              {importProgress.phase !== "idle" ? (
+                <div className={`import-progress import-progress-${importProgress.phase}`} role="status" aria-live="polite">
+                  <div className="import-progress-copy">
+                    <strong>
+                      {importProgress.phase === "done"
+                        ? "匯入完成"
+                        : importProgress.phase === "error"
+                          ? "匯入發生問題"
+                          : "匯入進度"}
+                    </strong>
+                    <span>{importProgress.label}</span>
+                  </div>
+                  <div className="import-progress-count">
+                    {importProgress.total > 0 ? `${importProgress.current} / ${importProgress.total}` : "準備中"}
+                  </div>
+                  <div className="import-progress-track" aria-hidden="true">
+                    <div style={{ width: `${importPercent}%` }} />
+                  </div>
+                </div>
+              ) : null}
 
               {csvErrors.length > 0 ? (
                 <div className="csv-errors">
@@ -618,7 +694,7 @@ export default function Home() {
                 <Field label="SQLiteCloud Connection String" value={settings.connectionString} placeholder="留空使用 Vercel SQLITECLOUD_CONNECTION_STRING" onChange={(value) => setSettings({ ...settings, connectionString: value })} />
                 <Field label="到期提醒天數" type="number" value={settings.notificationDays} onChange={(value) => setSettings({ ...settings, notificationDays: Number(value || 0) })} />
                 <div className="settings-actions">
-                  <button className="button primary" onClick={saveSettings}><Check size={16} />儲存設定</button>
+                  <button className="button primary" onClick={() => saveSettings()}><Check size={16} />儲存設定</button>
                   <button className="button ghost" onClick={() => flash("連線測試入口已建立，可接 SQLiteCloud route")}>
                     <RefreshCw size={16} />
                     測試
