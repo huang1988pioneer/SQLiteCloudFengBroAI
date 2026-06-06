@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Check, Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
 import { workspaceModules, workspaceToolItems } from "@/lib/workspace-modules";
 import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
@@ -112,19 +112,6 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
     };
   }, [activeModule, fetchRecords, syncReady, toolsActive]);
 
-  const setupTables = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch("/api/workspace/setup", { method: "POST", headers: getCloudHeaders() });
-      const result = await response.json();
-      if (!response.ok || result.error) throw new Error(result.error || "鋒兄模組資料表建立失敗");
-      flash("已建立或確認所有鋒兄模組資料表");
-    } catch (error) {
-      flash(error instanceof Error ? error.message : "鋒兄模組資料表建立失敗");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const saveRecord = async () => {
     if (requiredField && !String(draft[requiredField.name] || "").trim()) {
@@ -265,10 +252,6 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
           <h2>鋒兄工作台</h2>
           <p>食品、筆記、常用、銀行、例行直接寫入 SQLiteCloud；鋒兄工具提供比價、手機、Tube、金融子項目。</p>
         </div>
-        <button className="button primary" onClick={setupTables} disabled={loading}>
-          <Check size={16} />
-          一鍵生成全部 Tables
-        </button>
       </div>
 
       <div className="module-tabs">
