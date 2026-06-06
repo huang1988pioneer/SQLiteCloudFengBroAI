@@ -18,10 +18,8 @@ import {
   RefreshCw,
   Search,
   Settings,
-  Table2,
   Trash2,
   Upload,
-  WalletCards,
 } from "lucide-react";
 import {
   appwriteCsvHeaders,
@@ -450,14 +448,12 @@ export default function Home() {
           </button>
         </div>
         <nav aria-label="主選單">
-          <a className="nav-item active" href="#subscriptions" title="鋒兄訂閱"><WalletCards size={18} /><span>鋒兄訂閱</span></a>
-          <a className="nav-item" href="#workspace-modules" title="鋒兄工作台"><Database size={18} /><span>鋒兄工作台</span></a>
+          <a className="nav-item active" href="#workspace-modules" title="鋒兄工作台"><Database size={18} /><span>鋒兄工作台</span></a>
           <a className="nav-item" href="#settings" title="鋒兄設定"><Settings size={18} /><span>鋒兄設定</span></a>
-          <a className="nav-item" href="#schema" title="Table 建議"><Table2 size={18} /><span>Table 建議</span></a>
         </nav>
         <div className="sidebar-note">
           <Database size={18} />
-          <p>訂閱資料只寫入 SQLiteCloud，不寫入 localStorage；Connection String 可留空使用 Vercel 環境變數。</p>
+          <p>鋒兄工作台資料只寫入 SQLiteCloud，不寫入 localStorage；Connection String 可留空使用 Vercel 環境變數。</p>
         </div>
       </aside>
 
