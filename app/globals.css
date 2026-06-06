@@ -46,6 +46,10 @@ a {
   min-height: 100vh;
 }
 
+.app-shell.left-collapsed {
+  grid-template-columns: 82px minmax(0, 1fr);
+}
+
 .sidebar {
   position: sticky;
   top: 0;
@@ -55,11 +59,20 @@ a {
   padding: 24px;
 }
 
+.sidebar.is-collapsed {
+  padding: 20px 14px;
+}
+
 .brand {
   display: flex;
   align-items: center;
   gap: 12px;
   margin-bottom: 34px;
+}
+
+.sidebar.is-collapsed .brand {
+  justify-content: center;
+  margin-bottom: 24px;
 }
 
 .brand-mark {
@@ -84,6 +97,38 @@ a {
   font-size: 12px;
 }
 
+.sidebar-toggle,
+.icon-button {
+  display: inline-grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: #475467;
+  cursor: pointer;
+}
+
+.sidebar-toggle {
+  margin-left: auto;
+}
+
+.sidebar.is-collapsed .brand-copy,
+.sidebar.is-collapsed .nav-item span,
+.sidebar.is-collapsed .sidebar-note {
+  display: none;
+}
+
+.sidebar.is-collapsed .sidebar-toggle {
+  margin-left: 0;
+}
+
+.sidebar.is-collapsed .brand-mark {
+  width: 38px;
+  height: 38px;
+}
+
 .nav-item {
   display: flex;
   align-items: center;
@@ -92,6 +137,11 @@ a {
   color: #344054;
   font-size: 14px;
   padding: 11px 12px;
+}
+
+.sidebar.is-collapsed .nav-item {
+  justify-content: center;
+  padding: 12px;
 }
 
 .nav-item + .nav-item {
@@ -223,6 +273,10 @@ h2 {
   align-items: start;
 }
 
+.content-grid.right-collapsed {
+  grid-template-columns: minmax(0, 1fr) 58px;
+}
+
 .main-column {
   display: grid;
   gap: 18px;
@@ -249,6 +303,24 @@ h2 {
   padding: 18px;
 }
 
+.settings-panel.is-collapsed {
+  justify-items: center;
+  gap: 0;
+  min-height: 160px;
+  padding: 12px;
+}
+
+.settings-collapsed-button {
+  display: grid;
+  gap: 12px;
+  width: 34px;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: var(--teal-strong);
+  cursor: pointer;
+}
+
 .panel-heading {
   display: flex;
   align-items: center;
@@ -261,6 +333,10 @@ h2 {
 .panel-heading.compact {
   border-bottom: 0;
   padding: 0 0 4px;
+}
+
+.panel-heading.compact .icon-button {
+  flex: 0 0 auto;
 }
 
 .panel-tools {
@@ -575,6 +651,10 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .app-shell.left-collapsed {
+    grid-template-columns: 1fr;
+  }
+
   .sidebar {
     position: static;
     height: auto;
@@ -592,12 +672,53 @@ code {
     margin-top: 0;
   }
 
+  .sidebar.is-collapsed .brand-copy,
+  .sidebar.is-collapsed .nav-item span {
+    display: block;
+  }
+
+  .sidebar.is-collapsed .sidebar-note {
+    display: flex;
+  }
+
+  .sidebar.is-collapsed {
+    padding: 18px;
+  }
+
+  .sidebar.is-collapsed .brand {
+    justify-content: flex-start;
+    margin-bottom: 34px;
+  }
+
+  .sidebar.is-collapsed .nav-item {
+    justify-content: flex-start;
+  }
+
   .content-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .content-grid.right-collapsed {
     grid-template-columns: 1fr;
   }
 
   .settings-panel {
     position: static;
+  }
+
+  .settings-panel.is-collapsed {
+    min-height: auto;
+    align-items: center;
+  }
+
+  .settings-collapsed-button {
+    display: inline-flex;
+    width: 100%;
+    min-height: 44px;
+    grid-auto-flow: column;
+    border: 1px solid var(--line);
+    border-radius: var(--radius);
+    background: var(--surface);
   }
 }
 

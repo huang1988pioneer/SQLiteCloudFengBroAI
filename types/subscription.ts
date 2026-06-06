@@ -16,9 +16,6 @@ export type SubscriptionDraft = Omit<Subscription, "id" | "created_at" | "update
 
 export type FengBroSettings = {
   connectionString: string;
-  apiKey: string;
-  databaseName: string;
-  adminEmail: string;
   notificationDays: number;
 };
 

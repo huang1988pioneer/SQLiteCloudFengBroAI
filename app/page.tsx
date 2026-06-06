@@ -9,6 +9,10 @@ import {
   Download,
   ExternalLink,
   KeyRound,
+  PanelLeftClose,
+  PanelLeftOpen,
+  PanelRightClose,
+  PanelRightOpen,
   Pencil,
   Plus,
   RefreshCw,
@@ -43,9 +47,6 @@ const emptyDraft: SubscriptionDraft = {
 
 const defaultSettings: FengBroSettings = {
   connectionString: "",
-  apiKey: "",
-  databaseName: "",
-  adminEmail: "",
   notificationDays: 7,
 };
 
@@ -156,11 +157,19 @@ export default function Home() {
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
   const [creatingTable, setCreatingTable] = useState(false);
   const [syncingCloud, setSyncingCloud] = useState(false);
+  const [leftCollapsed, setLeftCollapsed] = useState(false);
+  const [rightCollapsed, setRightCollapsed] = useState(false);
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(settingsKey);
     const savedSubscriptions = localStorage.getItem(localSubscriptionsKey);
-    if (savedSettings) setSettings(JSON.parse(savedSettings) as FengBroSettings);
+    if (savedSettings) {
+      const parsed = JSON.parse(savedSettings) as Partial<FengBroSettings>;
+      setSettings({
+        connectionString: parsed.connectionString || "",
+        notificationDays: Number(parsed.notificationDays || defaultSettings.notificationDays),
+      });
+    }
     if (savedSubscriptions) setSubscriptions(JSON.parse(savedSubscriptions) as Subscription[]);
   }, []);
 
@@ -418,19 +427,27 @@ export default function Home() {
   };
 
   return (
-    <main className="app-shell">
-      <aside className="sidebar">
+    <main className={`app-shell ${leftCollapsed ? "left-collapsed" : ""}`}>
+      <aside className={`sidebar ${leftCollapsed ? "is-collapsed" : ""}`}>
         <div className="brand">
           <div className="brand-mark">鋒</div>
-          <div>
+          <div className="brand-copy">
             <strong>鋒兄 AI</strong>
             <span>SQLiteCloud Workspace</span>
           </div>
+          <button
+            className="sidebar-toggle"
+            type="button"
+            title={leftCollapsed ? "展開左側邊" : "折疊左側邊"}
+            onClick={() => setLeftCollapsed((value) => !value)}
+          >
+            {leftCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+          </button>
         </div>
         <nav aria-label="主選單">
-          <a className="nav-item active" href="#subscriptions"><WalletCards size={18} />鋒兄訂閱</a>
-          <a className="nav-item" href="#settings"><Settings size={18} />鋒兄設定</a>
-          <a className="nav-item" href="#schema"><Table2 size={18} />Table 建議</a>
+          <a className="nav-item active" href="#subscriptions" title="鋒兄訂閱"><WalletCards size={18} /><span>鋒兄訂閱</span></a>
+          <a className="nav-item" href="#settings" title="鋒兄設定"><Settings size={18} /><span>鋒兄設定</span></a>
+          <a className="nav-item" href="#schema" title="Table 建議"><Table2 size={18} /><span>Table 建議</span></a>
         </nav>
         <div className="sidebar-note">
           <Database size={18} />
@@ -465,7 +482,7 @@ export default function Home() {
           </div>
         </section>
 
-        <section className="content-grid">
+        <section className={`content-grid ${rightCollapsed ? "right-collapsed" : ""}`}>
           <div className="main-column">
             <section id="subscriptions" className="panel">
               <div className="panel-heading">
@@ -615,34 +632,52 @@ export default function Home() {
             </section>
           </div>
 
-          <aside id="settings" className="settings-panel">
-            <div className="panel-heading compact">
-              <div>
-                <h2>鋒兄設定</h2>
-                <p>給使用者輸入 API key 等資料。</p>
-              </div>
-              <KeyRound size={20} />
-            </div>
-            <Field label="SQLiteCloud Connection String" value={settings.connectionString} placeholder="sqlitecloud://..." onChange={(value) => setSettings({ ...settings, connectionString: value })} />
-            <Field label="API Key" type="password" value={settings.apiKey} placeholder="輸入 API key" onChange={(value) => setSettings({ ...settings, apiKey: value })} />
-            <Field label="Database Name" value={settings.databaseName} placeholder="fengbro_ai" onChange={(value) => setSettings({ ...settings, databaseName: value })} />
-            <Field label="Admin Email" type="email" value={settings.adminEmail} placeholder="you@example.com" onChange={(value) => setSettings({ ...settings, adminEmail: value })} />
-            <Field label="到期提醒天數" type="number" value={settings.notificationDays} onChange={(value) => setSettings({ ...settings, notificationDays: Number(value || 0) })} />
-            <div className="settings-actions">
-              <button className="button primary" onClick={saveSettings}><Check size={16} />儲存設定</button>
-              <button className="button ghost" onClick={() => flash("連線測試入口已建立，可接 SQLiteCloud route")}>
-                <RefreshCw size={16} />
-                測試
+          <aside id="settings" className={`settings-panel ${rightCollapsed ? "is-collapsed" : ""}`}>
+            {rightCollapsed ? (
+              <button
+                className="settings-collapsed-button"
+                type="button"
+                title="展開鋒兄設定"
+                onClick={() => setRightCollapsed(false)}
+              >
+                <PanelRightOpen size={18} />
+                <KeyRound size={18} />
               </button>
-            </div>
-            <button className="button setup-button" onClick={createSubscriptionTable} disabled={creatingTable}>
-              <Database size={16} />
-              {creatingTable ? "生成中..." : "一鍵生成 Table Subscription"}
-            </button>
-            <div className="notice">
-              <Bell size={17} />
-              <p>部署後可將 connection string 設為 `SQLITE_CLOUD_CONNECTION_STRING`，或由前端設定透過 header 傳給 API route。</p>
-            </div>
+            ) : (
+              <>
+                <div className="panel-heading compact">
+                  <div>
+                    <h2>鋒兄設定</h2>
+                    <p>設定 SQLiteCloud 連線與提醒天數。</p>
+                  </div>
+                  <button
+                    className="icon-button"
+                    type="button"
+                    title="折疊右側設定"
+                    onClick={() => setRightCollapsed(true)}
+                  >
+                    <PanelRightClose size={18} />
+                  </button>
+                </div>
+                <Field label="SQLiteCloud Connection String" value={settings.connectionString} placeholder="sqlitecloud://..." onChange={(value) => setSettings({ ...settings, connectionString: value })} />
+                <Field label="到期提醒天數" type="number" value={settings.notificationDays} onChange={(value) => setSettings({ ...settings, notificationDays: Number(value || 0) })} />
+                <div className="settings-actions">
+                  <button className="button primary" onClick={saveSettings}><Check size={16} />儲存設定</button>
+                  <button className="button ghost" onClick={() => flash("連線測試入口已建立，可接 SQLiteCloud route")}>
+                    <RefreshCw size={16} />
+                    測試
+                  </button>
+                </div>
+                <button className="button setup-button" onClick={createSubscriptionTable} disabled={creatingTable}>
+                  <Database size={16} />
+                  {creatingTable ? "生成中..." : "一鍵生成 Table Subscription"}
+                </button>
+                <div className="notice">
+                  <Bell size={17} />
+                  <p>部署後可將 connection string 設為 `SQLITE_CLOUD_CONNECTION_STRING`，或由前端設定透過 header 傳給 API route。</p>
+                </div>
+              </>
+            )}
           </aside>
         </section>
       </section>

@@ -3,7 +3,7 @@
 鋒兄 AI 的 SQLiteCloud 版本，先聚焦在「鋒兄訂閱」與「鋒兄設定」：
 
 - 訂閱資料新增、編輯、刪除、搜尋與到期狀態檢視
-- 使用者可輸入 SQLiteCloud Connection String、API Key、資料庫名稱與通知設定
+- 使用者可輸入 SQLiteCloud Connection String 與通知設定
 - 內建 `subscription` table 建議格式與 SQL
 - 使用 Next.js latest、React latest 與 App Router
 
