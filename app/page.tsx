@@ -279,41 +279,25 @@ export default function Home() {
     }
   };
 
-  const syncLocalToCloud = async () => {
-    setSyncingCloud(true);
-    try {
-      saveSettings();
-      await setupSubscriptionTable();
-      for (const subscription of subscriptions) {
-        const draftForCloud: SubscriptionDraft = {
-          name: subscription.name,
-          site: subscription.site,
-          price: subscription.price,
-          currency: subscription.currency,
-          nextdate: subscription.nextdate,
-          account: subscription.account,
-          note: subscription.note,
-          continue: subscription.continue,
-        };
-        const response = await fetch("/api/subscription", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...getCloudHeaders(),
-          },
-          body: JSON.stringify({ id: subscription.id, ...draftForCloud }),
-        });
-        const result = await response.json();
-        if (!response.ok || result.error) {
-          throw new Error(result.error || `同步 ${subscription.name} 失敗`);
-        }
+  const importRowsToCloud = async (rows: SubscriptionDraft[]) => {
+    await setupSubscriptionTable();
+    const importedCloudRows: Subscription[] = [];
+    for (const row of rows) {
+      const response = await fetch("/api/subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getCloudHeaders(),
+        },
+        body: JSON.stringify(row),
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        throw new Error(result.error || `匯入 ${row.name} 到 SQLiteCloud 失敗`);
       }
-      flash(`已同步 ${subscriptions.length} 筆到 SQLiteCloud`);
-    } catch (error) {
-      flash(error instanceof Error ? error.message : "同步到 SQLiteCloud 失敗");
-    } finally {
-      setSyncingCloud(false);
+      importedCloudRows.push(normalizeCloudSubscription(result));
     }
+    return importedCloudRows;
   };
 
   const saveDraft = async () => {
@@ -421,9 +405,24 @@ export default function Home() {
       flash("沒有可匯入的訂閱資料");
       return;
     }
+    if (settings.connectionString.trim()) {
+      setSyncingCloud(true);
+      try {
+        saveSettings();
+        const importedCloudRows = await importRowsToCloud(result.rows);
+        await loadCloudSubscriptions();
+        flash(`已直接匯入 ${importedCloudRows.length} 筆到 SQLiteCloud`);
+      } catch (error) {
+        flash(error instanceof Error ? error.message : "匯入 SQLiteCloud 失敗");
+      } finally {
+        setSyncingCloud(false);
+      }
+      return;
+    }
+
     const imported = result.rows.map((row) => buildSubscription(row));
     setSubscriptions((items) => [...imported, ...items]);
-    flash(`已匯入 ${imported.length} 筆 Appwrite CSV`);
+    flash(`已匯入 ${imported.length} 筆 Appwrite CSV 到本機`);
   };
 
   return (
@@ -516,11 +515,7 @@ export default function Home() {
                   </button>
                   <button className="button ghost" onClick={loadCloudSubscriptions} disabled={syncingCloud}>
                     <RefreshCw size={16} />
-                    載入 Cloud
-                  </button>
-                  <button className="button ghost" onClick={syncLocalToCloud} disabled={syncingCloud}>
-                    <Database size={16} />
-                    同步到 Cloud
+                    重新載入
                   </button>
                 </div>
               </div>
@@ -528,7 +523,7 @@ export default function Home() {
               <div className="csv-hint">
                 <strong>Appwrite CSV 相容欄位</strong>
                 <code>{appwriteCsvHeaders.join(",")}</code>
-                <span>支援 quoted 多行備註，例如你的 `note` 欄含換行、逗號或全形數字都可匯入並原樣匯出。</span>
+                <span>支援 quoted 多行備註；填入 SQLiteCloud Connection String 時，匯入 CSV 會直接寫入 SQLiteCloud。</span>
               </div>
 
               {csvErrors.length > 0 ? (
