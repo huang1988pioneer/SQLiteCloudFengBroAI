@@ -14,6 +14,12 @@ npm install
 npm run dev
 ```
 
+## Vercel
+
+Set `SQLITECLOUD_CONNECTION_STRING` in Vercel Project Settings. The app also accepts the legacy name `SQLITE_CLOUD_CONNECTION_STRING`.
+
+The browser setting field is only an optional personal override. CSV import, reload, create, update, and delete all go through the SQLiteCloud API routes, so imported Appwrite CSV rows are written directly to the `subscription` table.
+
 ## Subscription Table
 
 建議表名：`subscription`

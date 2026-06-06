@@ -32,7 +32,6 @@ import { subscriptionCreateTableSql, subscriptionSchema } from "@/lib/subscripti
 import type { FengBroSettings, Subscription, SubscriptionDraft } from "@/types/subscription";
 
 const settingsKey = "fengbro.sqlitecloud.settings";
-const localSubscriptionsKey = "fengbro.sqlitecloud.subscriptions";
 
 const emptyDraft: SubscriptionDraft = {
   name: "",
@@ -49,48 +48,6 @@ const defaultSettings: FengBroSettings = {
   connectionString: "",
   notificationDays: 7,
 };
-
-const seedSubscriptions: Subscription[] = [
-  {
-    id: "seed-openai",
-    name: "ChatGPT Plus",
-    site: "https://chatgpt.com",
-    price: 20,
-    currency: "USD",
-    nextdate: "2026-06-18",
-    account: "fengbro@example.com",
-    note: "主要 AI 助理帳號",
-    continue: true,
-    created_at: "2026-06-01T00:00:00.000Z",
-    updated_at: "2026-06-01T00:00:00.000Z",
-  },
-  {
-    id: "seed-storage",
-    name: "SQLite Cloud",
-    site: "https://sqlitecloud.io",
-    price: 29,
-    currency: "USD",
-    nextdate: "2026-06-25",
-    account: "admin@fengbro.ai",
-    note: "訂閱資料庫服務",
-    continue: true,
-    created_at: "2026-06-01T00:00:00.000Z",
-    updated_at: "2026-06-01T00:00:00.000Z",
-  },
-  {
-    id: "seed-design",
-    name: "Impeccable",
-    site: "https://impeccable.style",
-    price: 0,
-    currency: "TWD",
-    nextdate: "",
-    account: "",
-    note: "設計流程參考",
-    continue: false,
-    created_at: "2026-06-01T00:00:00.000Z",
-    updated_at: "2026-06-01T00:00:00.000Z",
-  },
-];
 
 function daysUntil(dateValue: string) {
   if (!dateValue) return Number.POSITIVE_INFINITY;
@@ -112,17 +69,6 @@ function currencyLabel(price: number, currency: string) {
 function toTwd(subscription: Subscription) {
   const rate: Record<string, number> = { TWD: 1, USD: 32, JPY: 0.22, HKD: 4.1, CNY: 4.4 };
   return Number(subscription.price || 0) * (rate[(subscription.currency || "TWD").toUpperCase()] || 1);
-}
-
-function buildSubscription(draft: SubscriptionDraft, id?: string): Subscription {
-  const now = new Date().toISOString();
-  return {
-    id: id || crypto.randomUUID(),
-    ...draft,
-    currency: (draft.currency || "TWD").toUpperCase(),
-    created_at: now,
-    updated_at: now,
-  };
 }
 
 function Field({
@@ -148,8 +94,9 @@ function Field({
 
 export default function Home() {
   const importInputRef = useRef<HTMLInputElement>(null);
-  const [subscriptions, setSubscriptions] = useState<Subscription[]>(seedSubscriptions);
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [settings, setSettings] = useState<FengBroSettings>(defaultSettings);
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [draft, setDraft] = useState<SubscriptionDraft>(emptyDraft);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [query, setQuery] = useState("");
@@ -162,7 +109,6 @@ export default function Home() {
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(settingsKey);
-    const savedSubscriptions = localStorage.getItem(localSubscriptionsKey);
     if (savedSettings) {
       const parsed = JSON.parse(savedSettings) as Partial<FengBroSettings>;
       setSettings({
@@ -170,12 +116,8 @@ export default function Home() {
         notificationDays: Number(parsed.notificationDays || defaultSettings.notificationDays),
       });
     }
-    if (savedSubscriptions) setSubscriptions(JSON.parse(savedSubscriptions) as Subscription[]);
+    setSettingsLoaded(true);
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem(localSubscriptionsKey, JSON.stringify(subscriptions));
-  }, [subscriptions]);
 
   const filteredSubscriptions = useMemo(() => {
     const normalized = query.trim().toLowerCase();
@@ -210,12 +152,9 @@ export default function Home() {
     flash("鋒兄設定已儲存");
   };
 
-  const getCloudHeaders = () => {
+  const getCloudHeaders = (): Record<string, string> => {
     const connectionString = settings.connectionString.trim();
-    if (!connectionString) {
-      throw new Error("請先輸入 SQLiteCloud Connection String");
-    }
-    return { "x-sqlitecloud-connection": connectionString };
+    return connectionString ? { "x-sqlitecloud-connection": connectionString } : {};
   };
 
   const normalizeCloudSubscription = (item: Subscription): Subscription => ({
@@ -257,27 +196,47 @@ export default function Home() {
     }
   };
 
-  const loadCloudSubscriptions = async () => {
+  const fetchCloudSubscriptions = async () => {
+    const response = await fetch(`/api/subscription?t=${Date.now()}`, {
+      headers: getCloudHeaders(),
+      cache: "no-store",
+    });
+    const result = await response.json();
+    if (!response.ok || result.error) {
+      throw new Error(result.error || "從 SQLiteCloud 載入失敗");
+    }
+    return (Array.isArray(result) ? result : []).map(normalizeCloudSubscription);
+  };
+
+  const loadCloudSubscriptions = async ({ silent = false } = {}) => {
     setSyncingCloud(true);
     try {
-      saveSettings();
-      const response = await fetch(`/api/subscription?t=${Date.now()}`, {
-        headers: getCloudHeaders(),
-        cache: "no-store",
-      });
-      const result = await response.json();
-      if (!response.ok || result.error) {
-        throw new Error(result.error || "從 SQLiteCloud 載入失敗");
-      }
-      const nextSubscriptions = (Array.isArray(result) ? result : []).map(normalizeCloudSubscription);
+      if (!silent) saveSettings();
+      const nextSubscriptions = await fetchCloudSubscriptions();
       setSubscriptions(nextSubscriptions);
-      flash(`已從 SQLiteCloud 載入 ${nextSubscriptions.length} 筆`);
+      if (!silent) flash(`已重新載入 ${nextSubscriptions.length} 筆 SQLiteCloud 資料`);
     } catch (error) {
-      flash(error instanceof Error ? error.message : "從 SQLiteCloud 載入失敗");
+      if (!silent) flash(error instanceof Error ? error.message : "從 SQLiteCloud 載入失敗");
     } finally {
       setSyncingCloud(false);
     }
   };
+
+  useEffect(() => {
+    if (!settingsLoaded) return;
+    if (settings.connectionString.trim()) {
+      void loadCloudSubscriptions({ silent: true });
+      return;
+    }
+    const loadDefaultConnection = async () => {
+      const response = await fetch("/api/subscription/config", { cache: "no-store" });
+      const result = await response.json();
+      if (result.hasDefaultConnectionString) {
+        await loadCloudSubscriptions({ silent: true });
+      }
+    };
+    void loadDefaultConnection();
+  }, [settings.connectionString, settingsLoaded]);
 
   const importRowsToCloud = async (rows: SubscriptionDraft[]) => {
     await setupSubscriptionTable();
@@ -303,20 +262,18 @@ export default function Home() {
   const saveDraft = async () => {
     if (!draft.name.trim()) return;
     if (editingId) {
-      if (settings.connectionString.trim()) {
-        const response = await fetch(`/api/subscription/${editingId}`, {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-            ...getCloudHeaders(),
-          },
-          body: JSON.stringify(draft),
-        });
-        const result = await response.json();
-        if (!response.ok || result.error) {
-          flash(result.error || "更新 SQLiteCloud 訂閱失敗");
-          return;
-        }
+      const response = await fetch(`/api/subscription/${editingId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...getCloudHeaders(),
+        },
+        body: JSON.stringify(draft),
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        flash(result.error || "更新 SQLiteCloud 訂閱失敗");
+        return;
       }
       setSubscriptions((items) =>
         items.map((item) =>
@@ -326,40 +283,34 @@ export default function Home() {
         )
       );
     } else {
-      if (settings.connectionString.trim()) {
-        const response = await fetch("/api/subscription", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...getCloudHeaders(),
-          },
-          body: JSON.stringify(draft),
-        });
-        const result = await response.json();
-        if (!response.ok || result.error) {
-          flash(result.error || "新增 SQLiteCloud 訂閱失敗");
-          return;
-        }
-        setSubscriptions((items) => [normalizeCloudSubscription(result), ...items]);
-      } else {
-        setSubscriptions((items) => [buildSubscription(draft), ...items]);
+      const response = await fetch("/api/subscription", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...getCloudHeaders(),
+        },
+        body: JSON.stringify(draft),
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        flash(result.error || "新增 SQLiteCloud 訂閱失敗");
+        return;
       }
+      setSubscriptions((items) => [normalizeCloudSubscription(result), ...items]);
     }
     setDraft(emptyDraft);
     setEditingId(null);
   };
 
   const deleteSubscriptionById = async (id: string) => {
-    if (settings.connectionString.trim()) {
-      const response = await fetch(`/api/subscription/${id}`, {
-        method: "DELETE",
-        headers: getCloudHeaders(),
-      });
-      const result = await response.json();
-      if (!response.ok || result.error) {
-        flash(result.error || "刪除 SQLiteCloud 訂閱失敗");
-        return;
-      }
+    const response = await fetch(`/api/subscription/${id}`, {
+      method: "DELETE",
+      headers: getCloudHeaders(),
+    });
+    const result = await response.json();
+    if (!response.ok || result.error) {
+      flash(result.error || "刪除 SQLiteCloud 訂閱失敗");
+      return;
     }
     setSubscriptions((items) => items.filter((item) => item.id !== id));
   };
@@ -405,24 +356,18 @@ export default function Home() {
       flash("沒有可匯入的訂閱資料");
       return;
     }
-    if (settings.connectionString.trim()) {
-      setSyncingCloud(true);
-      try {
-        saveSettings();
-        const importedCloudRows = await importRowsToCloud(result.rows);
-        await loadCloudSubscriptions();
-        flash(`已直接匯入 ${importedCloudRows.length} 筆到 SQLiteCloud`);
-      } catch (error) {
-        flash(error instanceof Error ? error.message : "匯入 SQLiteCloud 失敗");
-      } finally {
-        setSyncingCloud(false);
-      }
-      return;
+    setSyncingCloud(true);
+    try {
+      saveSettings();
+      const importedCloudRows = await importRowsToCloud(result.rows);
+      const nextSubscriptions = await fetchCloudSubscriptions();
+      setSubscriptions(nextSubscriptions);
+      flash(`已直接匯入 ${importedCloudRows.length} 筆到 SQLiteCloud 資料庫`);
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "匯入 SQLiteCloud 失敗");
+    } finally {
+      setSyncingCloud(false);
     }
-
-    const imported = result.rows.map((row) => buildSubscription(row));
-    setSubscriptions((items) => [...imported, ...items]);
-    flash(`已匯入 ${imported.length} 筆 Appwrite CSV 到本機`);
   };
 
   return (
@@ -450,7 +395,7 @@ export default function Home() {
         </nav>
         <div className="sidebar-note">
           <Database size={18} />
-          <p>使用者輸入的 connection string 與 API key 會先存在瀏覽器 localStorage，便於個人部署測試。</p>
+          <p>Connection String 可留空改用 Vercel 環境變數；使用者覆蓋值只會存在瀏覽器 localStorage。</p>
         </div>
       </aside>
 
@@ -505,15 +450,15 @@ export default function Home() {
                       event.currentTarget.value = "";
                     }}
                   />
-                  <button className="button ghost" onClick={() => importInputRef.current?.click()}>
+                  <button className="button ghost" onClick={() => importInputRef.current?.click()} disabled={syncingCloud}>
                     <Upload size={16} />
-                    匯入 CSV
+                    直接匯入資料庫
                   </button>
                   <button className="button ghost" onClick={exportCsv}>
                     <Download size={16} />
                     匯出 CSV
                   </button>
-                  <button className="button ghost" onClick={loadCloudSubscriptions} disabled={syncingCloud}>
+                  <button className="button ghost" onClick={() => void loadCloudSubscriptions()} disabled={syncingCloud}>
                     <RefreshCw size={16} />
                     重新載入
                   </button>
@@ -523,7 +468,7 @@ export default function Home() {
               <div className="csv-hint">
                 <strong>Appwrite CSV 相容欄位</strong>
                 <code>{appwriteCsvHeaders.join(",")}</code>
-                <span>支援 quoted 多行備註；填入 SQLiteCloud Connection String 時，匯入 CSV 會直接寫入 SQLiteCloud。</span>
+                <span>CSV 匯入會直接寫入 SQLiteCloud；可用鋒兄設定覆蓋，或在 Vercel 設定 SQLITECLOUD_CONNECTION_STRING。</span>
               </div>
 
               {csvErrors.length > 0 ? (
@@ -643,7 +588,7 @@ export default function Home() {
                 <div className="panel-heading compact">
                   <div>
                     <h2>鋒兄設定</h2>
-                    <p>設定 SQLiteCloud 連線與提醒天數。</p>
+                    <p>設定 SQLiteCloud 連線覆蓋值與提醒天數；留空時使用 Vercel 預設環境變數。</p>
                   </div>
                   <button
                     className="icon-button"
@@ -654,7 +599,7 @@ export default function Home() {
                     <PanelRightClose size={18} />
                   </button>
                 </div>
-                <Field label="SQLiteCloud Connection String" value={settings.connectionString} placeholder="sqlitecloud://..." onChange={(value) => setSettings({ ...settings, connectionString: value })} />
+                <Field label="SQLiteCloud Connection String" value={settings.connectionString} placeholder="留空使用 Vercel SQLITECLOUD_CONNECTION_STRING" onChange={(value) => setSettings({ ...settings, connectionString: value })} />
                 <Field label="到期提醒天數" type="number" value={settings.notificationDays} onChange={(value) => setSettings({ ...settings, notificationDays: Number(value || 0) })} />
                 <div className="settings-actions">
                   <button className="button primary" onClick={saveSettings}><Check size={16} />儲存設定</button>
@@ -669,7 +614,7 @@ export default function Home() {
                 </button>
                 <div className="notice">
                   <Bell size={17} />
-                  <p>部署後可將 connection string 設為 `SQLITE_CLOUD_CONNECTION_STRING`，或由前端設定透過 header 傳給 API route。</p>
+                  <p>部署到 Vercel 時請設定 `SQLITECLOUD_CONNECTION_STRING`；也相容舊名 `SQLITE_CLOUD_CONNECTION_STRING`。前端欄位只作為個人覆蓋值。</p>
                 </div>
               </>
             )}

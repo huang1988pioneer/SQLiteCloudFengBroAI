@@ -6,7 +6,16 @@ type SQLiteCloudDb = {
 };
 
 export function getConnectionString(headers: Headers) {
-  return headers.get("x-sqlitecloud-connection") || process.env.SQLITE_CLOUD_CONNECTION_STRING || "";
+  return (
+    headers.get("x-sqlitecloud-connection") ||
+    process.env.SQLITECLOUD_CONNECTION_STRING ||
+    process.env.SQLITE_CLOUD_CONNECTION_STRING ||
+    ""
+  );
+}
+
+export function hasDefaultConnectionString() {
+  return Boolean(process.env.SQLITECLOUD_CONNECTION_STRING || process.env.SQLITE_CLOUD_CONNECTION_STRING);
 }
 
 export async function createSQLiteCloudDb(connectionString: string): Promise<SQLiteCloudDb> {
