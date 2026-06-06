@@ -6,6 +6,7 @@ import { ArticleCardView } from "@/components/ArticleCardView";
 import { BankCardView } from "@/components/BankCardView";
 import { CommonAccountCardView } from "@/components/CommonAccountCardView";
 import { FoodCardView } from "@/components/FoodCardView";
+import { RoutineCardView } from "@/components/RoutineCardView";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
 import { workspaceModules, workspaceToolItems } from "@/lib/workspace-modules";
 import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
@@ -120,6 +121,7 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
   const isBank = activeModule.key === "bank";
   const isCommon = activeModule.key === "common";
   const isFood = activeModule.key === "food";
+  const isRoutine = activeModule.key === "routine";
 
   const togglePin = async (record: WorkspaceRecord) => {
     const isPinned = Number(record.pinned || 0) === 1;
@@ -472,6 +474,13 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
           />
         ) : isBank ? (
           <BankCardView
+            records={records}
+            loading={loading}
+            onEdit={editRecord}
+            onDelete={(record) => void deleteRecord(record)}
+          />
+        ) : isRoutine ? (
+          <RoutineCardView
             records={records}
             loading={loading}
             onEdit={editRecord}

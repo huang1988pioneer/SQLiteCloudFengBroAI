@@ -93,15 +93,15 @@ export const workspaceModules: WorkspaceModule[] = [
     description: "例行事項、最近日期、連結與照片。",
     csvName: "appwrite-routine",
     fields: [
-      { name: "name", label: "例行事項", type: "text", required: true },
+      { name: "name", label: "例行事項（可含網址）", type: "text", required: true },
       { name: "note", label: "備註", type: "textarea", multiline: true },
       { name: "lastdate1", label: "日期 1", type: "date" },
       { name: "lastdate2", label: "日期 2", type: "date" },
       { name: "lastdate3", label: "日期 3", type: "date" },
-      { name: "link", label: "連結", type: "url" },
+
       { name: "photo", label: "照片", type: "url" },
     ],
-    displayFields: ["name", "lastdate1", "lastdate2", "link"],
+    displayFields: ["name", "lastdate1", "lastdate2"],
   },
 ];
 
