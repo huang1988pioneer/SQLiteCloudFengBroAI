@@ -37,8 +37,10 @@ export const workspaceModules: WorkspaceModule[] = [
     fields: [
       { name: "title", label: "標題", type: "text", required: true },
       { name: "content", label: "內容", type: "textarea", multiline: true },
+      { name: "ai_summary", label: "AI 摘要", type: "textarea", multiline: true },
       { name: "category", label: "分類", type: "text" },
       { name: "newDate", label: "日期", type: "date" },
+      { name: "pinned", label: "釘選", type: "number" },
       { name: "url1", label: "連結 1", type: "url" },
       { name: "url2", label: "連結 2", type: "url" },
       { name: "url3", label: "連結 3", type: "url" },

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { ArticleCardView } from "@/components/ArticleCardView";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
 import { workspaceModules, workspaceToolItems } from "@/lib/workspace-modules";
 import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
@@ -112,6 +113,63 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
     };
   }, [activeModule, fetchRecords, syncReady, toolsActive]);
 
+  const isArticle = activeModule.key === "article";
+
+  const togglePin = async (record: WorkspaceRecord) => {
+    const isPinned = Number(record.pinned || 0) === 1;
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/workspace/${activeModule.key}/${record.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...getCloudHeaders(),
+        },
+        body: JSON.stringify({ ...record, pinned: isPinned ? 0 : 1 }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) throw new Error(result.error || "釘選失敗");
+      await fetchRecords(activeModule, true);
+      flash(isPinned ? "已取消釘選" : "已釘選筆記");
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "釘選失敗");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const generateSummary = async (record: WorkspaceRecord) => {
+    const content = String(record.content || "").trim();
+    if (!content) {
+      flash("筆記內容為空，無法生成 AI 摘要");
+      return;
+    }
+    /* Client-side extractive summary: pick the first two meaningful sentences. */
+    const sentences = content
+      .replace(/\n+/g, " ")
+      .split(/(?<=[。！？.!?])\s*/)
+      .filter((s) => s.trim().length > 4);
+    const summary = sentences.slice(0, 3).join(" ").slice(0, 300) || content.slice(0, 300);
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/workspace/${activeModule.key}/${record.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...getCloudHeaders(),
+        },
+        body: JSON.stringify({ ...record, ai_summary: summary }),
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) throw new Error(result.error || "AI 摘要生成失敗");
+      await fetchRecords(activeModule, true);
+      flash("AI 摘要已生成並寫入");
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "AI 摘要生成失敗");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const saveRecord = async () => {
     if (requiredField && !String(draft[requiredField.name] || "").trim()) {
@@ -382,6 +440,16 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
           </div>
         </div>
 
+        {isArticle ? (
+          <ArticleCardView
+            records={records}
+            loading={loading}
+            onEdit={editRecord}
+            onDelete={(record) => void deleteRecord(record)}
+            onTogglePin={togglePin}
+            onGenerateSummary={generateSummary}
+          />
+        ) : (
         <div className="table-wrap module-table">
           <table>
             <thead>
@@ -414,6 +482,7 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
             </tbody>
           </table>
         </div>
+        )}
       </div>
       )}
     </section>
