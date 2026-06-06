@@ -47,11 +47,11 @@ export async function listSubscriptions(db: SQLiteCloudDb) {
   return normalizeRows(await db.sql("SELECT * FROM subscription ORDER BY COALESCE(nextdate, '9999-12-31') ASC, name ASC"));
 }
 
-export async function createSubscription(db: SQLiteCloudDb, draft: SubscriptionDraft) {
+export async function createSubscription(db: SQLiteCloudDb, draft: SubscriptionDraft & { id?: string }) {
   await ensureSubscriptionTable(db);
-  const id = crypto.randomUUID();
+  const id = draft.id || crypto.randomUUID();
   const now = new Date().toISOString();
-  await db.sql(`INSERT INTO subscription (
+  await db.sql(`INSERT OR REPLACE INTO subscription (
     id, name, site, price, currency, nextdate, account, note, continue, created_at, updated_at
   ) VALUES (
     ${quote(id)},

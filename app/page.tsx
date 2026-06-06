@@ -155,6 +155,7 @@ export default function Home() {
   const [savedSignal, setSavedSignal] = useState("");
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
   const [creatingTable, setCreatingTable] = useState(false);
+  const [syncingCloud, setSyncingCloud] = useState(false);
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(settingsKey);
@@ -200,26 +201,45 @@ export default function Home() {
     flash("鋒兄設定已儲存");
   };
 
-  const createSubscriptionTable = async () => {
+  const getCloudHeaders = () => {
     const connectionString = settings.connectionString.trim();
     if (!connectionString) {
-      flash("請先輸入 SQLiteCloud Connection String");
-      return;
+      throw new Error("請先輸入 SQLiteCloud Connection String");
     }
+    return { "x-sqlitecloud-connection": connectionString };
+  };
 
+  const normalizeCloudSubscription = (item: Subscription): Subscription => ({
+    ...item,
+    id: String(item.id),
+    site: item.site || "",
+    price: Number(item.price || 0),
+    currency: (item.currency || "TWD").toUpperCase(),
+    nextdate: item.nextdate || "",
+    account: item.account || "",
+    note: item.note || "",
+    continue: item.continue === true || (item.continue as unknown) === 1 || String(item.continue).toLowerCase() === "true",
+    created_at: item.created_at || "",
+    updated_at: item.updated_at || "",
+  });
+
+  const setupSubscriptionTable = async () => {
+    const response = await fetch("/api/subscription/setup", {
+      method: "POST",
+      headers: getCloudHeaders(),
+    });
+    const result = await response.json();
+    if (!response.ok || result.error) {
+      throw new Error(result.error || "建立 Table Subscription 失敗");
+    }
+    return result;
+  };
+
+  const createSubscriptionTable = async () => {
     setCreatingTable(true);
     try {
       saveSettings();
-      const response = await fetch("/api/subscription/setup", {
-        method: "POST",
-        headers: {
-          "x-sqlitecloud-connection": connectionString,
-        },
-      });
-      const result = await response.json();
-      if (!response.ok || result.error) {
-        throw new Error(result.error || "建立 Table Subscription 失敗");
-      }
+      await setupSubscriptionTable();
       flash("Table subscription 已建立或確認存在");
     } catch (error) {
       flash(error instanceof Error ? error.message : "建立 Table Subscription 失敗");
@@ -228,9 +248,83 @@ export default function Home() {
     }
   };
 
-  const saveDraft = () => {
+  const loadCloudSubscriptions = async () => {
+    setSyncingCloud(true);
+    try {
+      saveSettings();
+      const response = await fetch(`/api/subscription?t=${Date.now()}`, {
+        headers: getCloudHeaders(),
+        cache: "no-store",
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        throw new Error(result.error || "從 SQLiteCloud 載入失敗");
+      }
+      const nextSubscriptions = (Array.isArray(result) ? result : []).map(normalizeCloudSubscription);
+      setSubscriptions(nextSubscriptions);
+      flash(`已從 SQLiteCloud 載入 ${nextSubscriptions.length} 筆`);
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "從 SQLiteCloud 載入失敗");
+    } finally {
+      setSyncingCloud(false);
+    }
+  };
+
+  const syncLocalToCloud = async () => {
+    setSyncingCloud(true);
+    try {
+      saveSettings();
+      await setupSubscriptionTable();
+      for (const subscription of subscriptions) {
+        const draftForCloud: SubscriptionDraft = {
+          name: subscription.name,
+          site: subscription.site,
+          price: subscription.price,
+          currency: subscription.currency,
+          nextdate: subscription.nextdate,
+          account: subscription.account,
+          note: subscription.note,
+          continue: subscription.continue,
+        };
+        const response = await fetch("/api/subscription", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getCloudHeaders(),
+          },
+          body: JSON.stringify({ id: subscription.id, ...draftForCloud }),
+        });
+        const result = await response.json();
+        if (!response.ok || result.error) {
+          throw new Error(result.error || `同步 ${subscription.name} 失敗`);
+        }
+      }
+      flash(`已同步 ${subscriptions.length} 筆到 SQLiteCloud`);
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "同步到 SQLiteCloud 失敗");
+    } finally {
+      setSyncingCloud(false);
+    }
+  };
+
+  const saveDraft = async () => {
     if (!draft.name.trim()) return;
     if (editingId) {
+      if (settings.connectionString.trim()) {
+        const response = await fetch(`/api/subscription/${editingId}`, {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            ...getCloudHeaders(),
+          },
+          body: JSON.stringify(draft),
+        });
+        const result = await response.json();
+        if (!response.ok || result.error) {
+          flash(result.error || "更新 SQLiteCloud 訂閱失敗");
+          return;
+        }
+      }
       setSubscriptions((items) =>
         items.map((item) =>
           item.id === editingId
@@ -239,10 +333,42 @@ export default function Home() {
         )
       );
     } else {
-      setSubscriptions((items) => [buildSubscription(draft), ...items]);
+      if (settings.connectionString.trim()) {
+        const response = await fetch("/api/subscription", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...getCloudHeaders(),
+          },
+          body: JSON.stringify(draft),
+        });
+        const result = await response.json();
+        if (!response.ok || result.error) {
+          flash(result.error || "新增 SQLiteCloud 訂閱失敗");
+          return;
+        }
+        setSubscriptions((items) => [normalizeCloudSubscription(result), ...items]);
+      } else {
+        setSubscriptions((items) => [buildSubscription(draft), ...items]);
+      }
     }
     setDraft(emptyDraft);
     setEditingId(null);
+  };
+
+  const deleteSubscriptionById = async (id: string) => {
+    if (settings.connectionString.trim()) {
+      const response = await fetch(`/api/subscription/${id}`, {
+        method: "DELETE",
+        headers: getCloudHeaders(),
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        flash(result.error || "刪除 SQLiteCloud 訂閱失敗");
+        return;
+      }
+    }
+    setSubscriptions((items) => items.filter((item) => item.id !== id));
   };
 
   const editSubscription = (subscription: Subscription) => {
@@ -371,6 +497,14 @@ export default function Home() {
                     <Download size={16} />
                     匯出 CSV
                   </button>
+                  <button className="button ghost" onClick={loadCloudSubscriptions} disabled={syncingCloud}>
+                    <RefreshCw size={16} />
+                    載入 Cloud
+                  </button>
+                  <button className="button ghost" onClick={syncLocalToCloud} disabled={syncingCloud}>
+                    <Database size={16} />
+                    同步到 Cloud
+                  </button>
                 </div>
               </div>
 
@@ -448,7 +582,7 @@ export default function Home() {
                           <td>
                             <div className="row-actions">
                               <button aria-label="編輯" onClick={() => editSubscription(subscription)}><Pencil size={15} /></button>
-                              <button aria-label="刪除" onClick={() => setSubscriptions((items) => items.filter((item) => item.id !== subscription.id))}><Trash2 size={15} /></button>
+                              <button aria-label="刪除" onClick={() => void deleteSubscriptionById(subscription.id)}><Trash2 size={15} /></button>
                             </div>
                           </td>
                         </tr>

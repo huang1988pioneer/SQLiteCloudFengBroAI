@@ -16,7 +16,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const body = (await request.json()) as SubscriptionDraft;
+    const body = (await request.json()) as SubscriptionDraft & { id?: string };
     if (!body.name?.trim()) {
       return NextResponse.json({ error: "name is required." }, { status: 400 });
     }
