@@ -1,14 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { AlertTriangle, Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { ArticleCardView } from "@/components/ArticleCardView";
 import { BankCardView } from "@/components/BankCardView";
 import { CommonAccountCardView } from "@/components/CommonAccountCardView";
+import { FengBroToolsPanel } from "@/components/FengBroToolsPanel";
 import { FoodCardView } from "@/components/FoodCardView";
 import { RoutineCardView } from "@/components/RoutineCardView";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
-import { workspaceModules, workspaceToolItems } from "@/lib/workspace-modules";
+import { workspaceModules } from "@/lib/workspace-modules";
 import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
 
 type ImportProgress = {
@@ -130,7 +131,6 @@ export function WorkspaceModulePanel({
   const isCommon = activeModule.key === "common";
   const isFood = activeModule.key === "food";
   const isRoutine = activeModule.key === "routine";
-  const financeRateText = financeMarginRate === null ? "" : String(financeMarginRate);
 
   const togglePin = async (record: WorkspaceRecord) => {
     const isPinned = Number(record.pinned || 0) === 1;
@@ -348,53 +348,11 @@ export function WorkspaceModulePanel({
       </div>
 
       {toolsActive ? (
-        <div className="module-body tool-menu-body">
-          <div className="module-summary tool-menu-summary">
-            <div>
-              <strong>鋒兄工具</strong>
-              <span>工具不是 SQLiteCloud table；下列為子項目入口，避免與資料表模組混在一起。</span>
-            </div>
-          </div>
-          <div className="tool-child-grid">
-            {workspaceToolItems.map((item) => (
-              <div key={item.key} className={`tool-child-card ${item.key === "finance" ? "finance-tool-card" : ""}`}>
-                <strong>{item.title}</strong>
-                <span>{item.description}</span>
-                {item.key === "finance" ? (
-                  <div className="finance-tool-control">
-                    <label className="field">
-                      <span>大盤融資維持率</span>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.1"
-                        value={financeRateText}
-                        placeholder="例如 139.8"
-                        onChange={(event) => {
-                          const value = event.target.value.trim();
-                          const rate = Number(value);
-                          onFinanceMarginRateChange?.(value && !Number.isNaN(rate) ? rate : null);
-                        }}
-                      />
-                    </label>
-                    {financeMarginRate !== null && financeMarginRate <= 140 ? (
-                      <div className="finance-tool-warning" role="status">
-                        <AlertTriangle size={16} />
-                        <span>140% 以下，首頁會提示使用者。</span>
-                      </div>
-                    ) : financeMarginRate !== null ? (
-                      <div className="finance-tool-ok">目前高於 140% 警戒線。</div>
-                    ) : null}
-                  </div>
-                ) : (
-                  <button className="button ghost tool-child-action" type="button" onClick={() => flash(`${item.title} 子項目入口已建立`)}>
-                    開啟
-                  </button>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
+        <FengBroToolsPanel
+          financeMarginRate={financeMarginRate}
+          onFinanceMarginRateChange={onFinanceMarginRateChange}
+          flash={flash}
+        />
       ) : (
       <div className="module-body">
         <div className="module-summary">

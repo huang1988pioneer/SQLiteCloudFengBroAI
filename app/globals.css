@@ -482,6 +482,255 @@ h2 {
   line-height: 1.5;
 }
 
+.tool-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  border-bottom: 1px solid var(--line-soft);
+  background: #fbfcfe;
+  padding: 12px 18px;
+}
+
+.tool-tabs button {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: #334155;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.tool-tabs button.active {
+  border-color: rgba(15, 118, 110, 0.28);
+  background: #e7f4f2;
+  color: #0f766e;
+}
+
+.tool-section {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.tool-section-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+}
+
+.tool-section-heading h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 20px;
+}
+
+.tool-section-heading p {
+  margin-top: 4px;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.tool-section-heading select,
+.tool-search-row input,
+.tube-manager input {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #ffffff;
+  color: var(--ink);
+  font-size: 15px;
+  padding: 0 12px;
+}
+
+.tool-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.tool-error,
+.tool-warning {
+  border-radius: var(--radius);
+  font-size: 13px;
+  font-weight: 750;
+  line-height: 1.55;
+  padding: 10px 12px;
+}
+
+.tool-error {
+  border: 1px solid #fecaca;
+  background: #fff1f2;
+  color: #991b1b;
+}
+
+.tool-warning {
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.tool-result-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.tool-result-card,
+.phone-card,
+.video-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--radius);
+  background: #ffffff;
+  padding: 14px;
+}
+
+.tool-result-card.wide {
+  grid-column: 1 / -1;
+}
+
+.tool-result-card strong,
+.phone-card strong,
+.video-card strong {
+  color: var(--ink);
+  line-height: 1.35;
+}
+
+.tool-result-card span,
+.tool-result-card p,
+.phone-card span,
+.phone-card small,
+.video-card span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.tool-result-card a,
+.tool-link-row a,
+.finance-alert-list a,
+.finance-quote-list a {
+  display: inline-flex;
+  gap: 5px;
+  align-items: center;
+  color: var(--teal-strong);
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.phone-grid,
+.video-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.phone-price-row,
+.tool-link-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tube-manager {
+  display: grid;
+  grid-template-columns: minmax(0, 160px) minmax(0, 1fr) auto auto;
+  gap: 10px;
+}
+
+.tube-channel-list {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tube-channel-pill {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid #c7dedb;
+  border-radius: 999px;
+  background: #f0fdfa;
+  color: var(--teal-strong);
+  font-size: 13px;
+  font-weight: 800;
+  padding: 7px 10px;
+}
+
+.tube-channel-pill button {
+  display: inline-flex;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+}
+
+.tool-subheading {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.video-card {
+  color: inherit;
+  text-decoration: none;
+}
+
+.video-card img {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: calc(var(--radius) - 2px);
+  object-fit: cover;
+}
+
+.finance-margin-control {
+  display: grid;
+  grid-template-columns: minmax(0, 320px) minmax(0, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.finance-alert-list {
+  display: grid;
+  gap: 8px;
+}
+
+.finance-alert-list a {
+  border: 1px solid #fecaca;
+  border-radius: var(--radius);
+  background: #fff1f2;
+  color: #991b1b;
+  padding: 10px 12px;
+}
+
+.finance-quote-list {
+  display: grid;
+  gap: 6px;
+}
+
+.finance-quote-list a {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  color: var(--ink);
+  padding: 8px 10px;
+}
+
+.finance-quote-list a.is-alert {
+  background: #fff1f2;
+  color: #991b1b;
+}
+
 .tool-child-action {
   justify-self: start;
   margin-top: 4px;
