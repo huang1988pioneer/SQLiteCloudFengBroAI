@@ -201,14 +201,21 @@ export default function Home() {
     return result;
   };
 
-  const createSubscriptionTable = async () => {
+  const createAllTables = async () => {
     setCreatingTable(true);
     try {
       saveSettings({ silent: true });
-      await setupSubscriptionTable();
-      flash("Table subscription 已建立或確認存在");
+      const response = await fetch("/api/workspace/setup", {
+        method: "POST",
+        headers: getCloudHeaders(),
+      });
+      const result = await response.json();
+      if (!response.ok || result.error) {
+        throw new Error(result.error || "鋒兄全部資料表建立失敗");
+      }
+      flash("鋒兄全部 Tables 已建立或確認存在");
     } catch (error) {
-      flash(error instanceof Error ? error.message : "建立 Table Subscription 失敗");
+      flash(error instanceof Error ? error.message : "鋒兄全部資料表建立失敗");
     } finally {
       setCreatingTable(false);
     }
@@ -705,9 +712,9 @@ export default function Home() {
                     測試
                   </button>
                 </div>
-                <button className="button setup-button" onClick={createSubscriptionTable} disabled={creatingTable}>
+                <button className="button setup-button" onClick={createAllTables} disabled={creatingTable}>
                   <Database size={16} />
-                  {creatingTable ? "生成中..." : "一鍵生成 Table Subscription"}
+                  {creatingTable ? "生成中..." : "一鍵生成全部 Tables"}
                 </button>
                 <div className="notice">
                   <Bell size={17} />

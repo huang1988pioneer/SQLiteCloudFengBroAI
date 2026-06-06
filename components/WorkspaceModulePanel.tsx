@@ -246,6 +246,9 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash }: Props) {
       </div>
 
       <div className="module-tabs">
+        <button onClick={() => document.getElementById("subscriptions")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+          訂閱
+        </button>
         {workspaceModules.map((module) => (
           <button
             key={module.key}
