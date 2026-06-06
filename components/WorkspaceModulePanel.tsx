@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { ArticleCardView } from "@/components/ArticleCardView";
+import { BankCardView } from "@/components/BankCardView";
 import { CommonAccountCardView } from "@/components/CommonAccountCardView";
 import { FoodCardView } from "@/components/FoodCardView";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
@@ -116,6 +117,7 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
   }, [activeModule, fetchRecords, syncReady, toolsActive]);
 
   const isArticle = activeModule.key === "article";
+  const isBank = activeModule.key === "bank";
   const isCommon = activeModule.key === "common";
   const isFood = activeModule.key === "food";
 
@@ -463,6 +465,13 @@ export function WorkspaceModulePanel({ getCloudHeaders, flash, syncReady = true 
           />
         ) : isFood ? (
           <FoodCardView
+            records={records}
+            loading={loading}
+            onEdit={editRecord}
+            onDelete={(record) => void deleteRecord(record)}
+          />
+        ) : isBank ? (
+          <BankCardView
             records={records}
             loading={loading}
             onEdit={editRecord}

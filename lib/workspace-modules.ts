@@ -84,7 +84,7 @@ export const workspaceModules: WorkspaceModule[] = [
       { name: "card", label: "卡片 / 電子票證", type: "text" },
       { name: "account", label: "帳號備註", type: "text" },
     ],
-    displayFields: ["name", "deposit", "card", "account", "site"],
+    displayFields: ["name", "deposit", "card", "account"],
   },
   {
     key: "routine",

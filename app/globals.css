@@ -1839,3 +1839,234 @@ code {
     padding: 12px;
   }
 }
+
+/* ─── Bank Card View (鋒兄銀行) ─── */
+
+.bank-view {
+  display: grid;
+}
+
+/* Summary bar */
+.bank-summary-bar {
+  display: flex;
+  gap: 24px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line-soft);
+  background: #f8fbfb;
+}
+
+.bank-summary-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.bank-summary-item span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.bank-summary-item strong {
+  color: var(--teal-strong);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* Card grid */
+.bank-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  padding: 18px;
+}
+
+.bank-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-top: 4px solid #2563eb;
+  border-radius: var(--radius);
+  background: var(--surface);
+  overflow: hidden;
+  transition: box-shadow 180ms ease, transform 180ms ease;
+}
+
+.bank-card:hover {
+  box-shadow: 0 6px 24px rgba(30, 41, 59, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Header */
+.bank-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 14px 8px;
+}
+
+.bank-card-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius);
+}
+
+.bank-card-title-area {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.bank-card-name-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1.3;
+  text-decoration: none;
+}
+
+.bank-card-name-link:hover {
+  text-decoration: underline;
+}
+
+.bank-card-name {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.bank-card-domain {
+  color: var(--muted);
+  font-size: 11px;
+}
+
+/* Deposit highlight */
+.bank-card-deposit {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 14px 8px;
+  border: 1px solid;
+  border-radius: var(--radius);
+  padding: 10px 12px;
+}
+
+.bank-card-deposit span {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* Details */
+.bank-card-details {
+  display: grid;
+  gap: 6px;
+  padding: 4px 14px 12px;
+  flex: 1;
+}
+
+.bank-detail-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #475467;
+  font-size: 13px;
+}
+
+.bank-detail-item svg {
+  flex: 0 0 auto;
+  color: #94a3b8;
+}
+
+.bank-activity-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--teal);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.bank-activity-link:hover {
+  text-decoration: underline;
+}
+
+/* Actions */
+.bank-card-actions {
+  display: flex;
+  gap: 6px;
+  border-top: 1px solid var(--line-soft);
+  padding: 10px 12px;
+}
+
+.bank-action-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  justify-content: center;
+  height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: #475467;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 120ms ease;
+}
+
+.bank-action-button:hover {
+  background: var(--surface-strong);
+}
+
+.bank-action-delete {
+  border-color: #fca5a5;
+  background: #dc2626;
+  color: white;
+}
+
+.bank-action-delete:hover {
+  background: #b91c1c;
+}
+
+.bank-action-delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Empty state */
+.bank-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 200px;
+  padding: 40px 18px;
+  color: var(--muted);
+}
+
+.bank-empty p {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .bank-card-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .bank-summary-bar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+}
