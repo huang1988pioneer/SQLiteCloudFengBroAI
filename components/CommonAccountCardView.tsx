@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Clipboard, ExternalLink, FileText, Globe, Pencil, Sparkles, Trash2 } from "lucide-react";
 import type { WorkspaceRecord } from "@/types/workspace";
 
@@ -18,7 +18,7 @@ type Props = {
   flash: (message: string) => void;
 };
 
-/** Alternate top-border colors for visual grouping, matching the reference design. */
+/** Alternate top-border colors for visual grouping. */
 const borderColors = ["#ea580c", "#2563eb", "#0891b2", "#7c3aed", "#059669", "#d97706"];
 
 function extractSites(record: WorkspaceRecord): SiteEntry[] {
@@ -52,8 +52,17 @@ function siteHref(value: string) {
   return `https://${value}`;
 }
 
+/** Derive a short display name from the account name. */
+function chipLabel(name: string) {
+  /* If it looks like an email, take the part before @ */
+  const atIndex = name.indexOf("@");
+  if (atIndex > 0) return name.slice(0, atIndex);
+  return name.length > 18 ? name.slice(0, 18) + "…" : name;
+}
+
 export function CommonAccountCardView({ records, loading, onEdit, onDelete, flash }: Props) {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   const toggleExpand = (id: string) => {
     setExpandedIds((prev) => {
@@ -73,6 +82,23 @@ export function CommonAccountCardView({ records, loading, onEdit, onDelete, flas
     }
   };
 
+  /** Build chips: one "全部" + one per record, with site count. */
+  const chips = useMemo(() => {
+    const totalSites = records.reduce((sum, r) => sum + extractSites(r).length, 0);
+    return [
+      { id: null as string | null, label: "全部", count: totalSites },
+      ...records.map((record) => ({
+        id: record.id,
+        label: chipLabel(String(record.name || "無名稱")),
+        count: extractSites(record).length,
+      })),
+    ];
+  }, [records]);
+
+  const visibleRecords = activeFilter
+    ? records.filter((r) => r.id === activeFilter)
+    : records;
+
   if (records.length === 0) {
     return (
       <div className="common-empty">
@@ -83,115 +109,133 @@ export function CommonAccountCardView({ records, loading, onEdit, onDelete, flas
   }
 
   return (
-    <div className="common-card-list">
-      {records.map((record, recordIndex) => {
-        const name = String(record.name || "無名稱");
-        const sites = extractSites(record);
-        const isExpanded = expandedIds.has(record.id);
-        const visibleSites = isExpanded ? sites : sites.slice(0, 4);
-        const color = borderColors[recordIndex % borderColors.length];
-
-        return (
-          <article
-            key={record.id}
-            className="common-card"
-            style={{ borderTopColor: color }}
+    <div className="common-view">
+      {/* ─── Tag / chip filter bar ─── */}
+      <div className="common-chip-bar">
+        {chips.map((chip) => (
+          <button
+            key={chip.id ?? "__all__"}
+            type="button"
+            className={`common-chip${(activeFilter === null && chip.id === null) || activeFilter === chip.id ? " common-chip-active" : ""}`}
+            onClick={() => setActiveFilter(chip.id)}
           >
-            {/* Card header */}
-            <div className="common-card-header">
-              <div className="common-card-name-row">
-                <FileText size={16} className="common-name-icon" />
-                <h3 className="common-card-name">{name}</h3>
-              </div>
-              <div className="common-card-header-actions">
-                <button
-                  type="button"
-                  className="common-icon-button"
-                  title="複製名稱"
-                  onClick={() => void copyToClipboard(name)}
-                >
-                  <Clipboard size={14} />
-                </button>
-                <button
-                  type="button"
-                  className="common-icon-button"
-                  title="編輯"
-                  onClick={() => onEdit(record)}
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  type="button"
-                  className="common-icon-button common-icon-delete"
-                  title="刪除"
-                  onClick={() => onDelete(record)}
-                  disabled={loading}
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            </div>
+            {chip.label}
+            <span className="common-chip-count">({chip.count})</span>
+          </button>
+        ))}
+      </div>
 
-            {/* Site entries */}
-            {visibleSites.length > 0 ? (
-              <div className="common-site-list">
-                {visibleSites.map((entry) => (
-                  <div key={entry.index} className="common-site-entry">
-                    {entry.note ? (
-                      <div className="common-site-note">
-                        <div className="common-site-note-label">
-                          <Sparkles size={12} />
-                          <span>AI 摘要</span>
+      {/* ─── Card list ─── */}
+      <div className="common-card-list">
+        {visibleRecords.map((record, recordIndex) => {
+          const name = String(record.name || "無名稱");
+          const sites = extractSites(record);
+          const isExpanded = expandedIds.has(record.id);
+          const visibleSites = isExpanded ? sites : sites.slice(0, 4);
+          const color = borderColors[recordIndex % borderColors.length];
+
+          return (
+            <article
+              key={record.id}
+              className="common-card"
+              style={{ borderTopColor: color }}
+            >
+              {/* Card header */}
+              <div className="common-card-header">
+                <div className="common-card-name-row">
+                  <FileText size={16} className="common-name-icon" />
+                  <h3 className="common-card-name">{name}</h3>
+                </div>
+                <div className="common-card-header-actions">
+                  <button
+                    type="button"
+                    className="common-icon-button"
+                    title="複製名稱"
+                    onClick={() => void copyToClipboard(name)}
+                  >
+                    <Clipboard size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="common-icon-button"
+                    title="編輯"
+                    onClick={() => onEdit(record)}
+                  >
+                    <Pencil size={14} />
+                  </button>
+                  <button
+                    type="button"
+                    className="common-icon-button common-icon-delete"
+                    title="刪除"
+                    onClick={() => onDelete(record)}
+                    disabled={loading}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Site entries */}
+              {visibleSites.length > 0 ? (
+                <div className="common-site-list">
+                  {visibleSites.map((entry) => (
+                    <div key={entry.index} className="common-site-entry">
+                      {entry.note ? (
+                        <div className="common-site-note">
+                          <div className="common-site-note-label">
+                            <Sparkles size={12} />
+                            <span>AI 摘要</span>
+                          </div>
+                          <p>{entry.note}</p>
                         </div>
-                        <p>{entry.note}</p>
-                      </div>
-                    ) : null}
-                    <div className="common-site-link-row">
-                      <Globe size={15} className="common-site-globe" />
-                      {isUrl(entry.site) ? (
-                        <a
-                          href={siteHref(entry.site)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="common-site-link"
-                        >
-                          {siteLabel(entry.site)}
-                          <ExternalLink size={12} />
-                        </a>
-                      ) : (
-                        <span className="common-site-text">{entry.site || entry.note}</span>
-                      )}
-                      <div className="common-site-actions">
-                        <button
-                          type="button"
-                          className="common-site-action-button"
-                          title="複製"
-                          onClick={() => void copyToClipboard(entry.site || entry.note)}
-                        >
-                          <Clipboard size={12} />
-                        </button>
+                      ) : null}
+                      <div className="common-site-link-row">
+                        <Globe size={15} className="common-site-globe" />
+                        {isUrl(entry.site) ? (
+                          <a
+                            href={siteHref(entry.site)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="common-site-link"
+                          >
+                            {siteLabel(entry.site)}
+                            <ExternalLink size={12} />
+                          </a>
+                        ) : (
+                          <span className="common-site-text">{entry.site || entry.note}</span>
+                        )}
+                        <div className="common-site-actions">
+                          <button
+                            type="button"
+                            className="common-site-action-button"
+                            title="複製"
+                            onClick={() => void copyToClipboard(entry.site || entry.note)}
+                          >
+                            <Clipboard size={12} />
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="common-site-empty">尚無常用網站</div>
-            )}
+                  ))}
+                </div>
+              ) : (
+                <div className="common-site-empty">尚無常用網站</div>
+              )}
 
-            {/* Expand / collapse */}
-            {sites.length > 4 ? (
-              <button
-                type="button"
-                className="common-expand-button"
-                onClick={() => toggleExpand(record.id)}
-              >
-                {isExpanded ? "收合" : `展開全部 ${sites.length} 項`}
-              </button>
-            ) : null}
-          </article>
-        );
-      })}
+              {/* Expand / collapse */}
+              {sites.length > 4 ? (
+                <button
+                  type="button"
+                  className="common-expand-button"
+                  onClick={() => toggleExpand(record.id)}
+                >
+                  {isExpanded ? "收合" : `展開全部 ${sites.length} 項`}
+                </button>
+              ) : null}
+            </article>
+          );
+        })}
+      </div>
     </div>
   );
 }

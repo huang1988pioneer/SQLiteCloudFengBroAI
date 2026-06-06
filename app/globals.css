@@ -1342,6 +1342,58 @@ code {
 
 /* ─── Common Account Card View (鋒兄常用) ─── */
 
+.common-view {
+  display: grid;
+}
+
+/* Chip / tag filter bar */
+.common-chip-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line-soft);
+  background: #fbfcfe;
+}
+
+.common-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: #475467;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 0 12px;
+  white-space: nowrap;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+}
+
+.common-chip:hover {
+  border-color: #c4cbd5;
+  background: var(--surface-strong);
+}
+
+.common-chip-active {
+  border-color: #ea580c;
+  background: #ea580c;
+  color: white;
+}
+
+.common-chip-active:hover {
+  background: #c2410c;
+  border-color: #c2410c;
+}
+
+.common-chip-count {
+  font-weight: 600;
+  opacity: 0.75;
+}
+
 .common-card-list {
   display: grid;
   gap: 16px;
