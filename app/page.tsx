@@ -275,13 +275,8 @@ export default function Home() {
         flash(result.error || "更新 SQLiteCloud 訂閱失敗");
         return;
       }
-      setSubscriptions((items) =>
-        items.map((item) =>
-          item.id === editingId
-            ? { ...item, ...draft, currency: (draft.currency || "TWD").toUpperCase(), updated_at: new Date().toISOString() }
-            : item
-        )
-      );
+      setSubscriptions(await fetchCloudSubscriptions());
+      flash("已確定修改並寫入 SQLiteCloud 資料庫");
     } else {
       const response = await fetch("/api/subscription", {
         method: "POST",
@@ -296,13 +291,17 @@ export default function Home() {
         flash(result.error || "新增 SQLiteCloud 訂閱失敗");
         return;
       }
-      setSubscriptions((items) => [normalizeCloudSubscription(result), ...items]);
+      setSubscriptions(await fetchCloudSubscriptions());
+      flash("已新增並寫入 SQLiteCloud 資料庫");
     }
     setDraft(emptyDraft);
     setEditingId(null);
   };
 
   const deleteSubscriptionById = async (id: string) => {
+    const subscription = subscriptions.find((item) => item.id === id);
+    const name = subscription?.name || id;
+    if (!window.confirm(`確定刪除「${name}」？此操作會直接刪除 SQLiteCloud 資料庫資料。`)) return;
     const response = await fetch(`/api/subscription/${id}`, {
       method: "DELETE",
       headers: getCloudHeaders(),
@@ -312,7 +311,13 @@ export default function Home() {
       flash(result.error || "刪除 SQLiteCloud 訂閱失敗");
       return;
     }
-    setSubscriptions((items) => items.filter((item) => item.id !== id));
+    setSubscriptions(await fetchCloudSubscriptions());
+    flash("已刪除 SQLiteCloud 資料庫資料");
+  };
+
+  const cancelEdit = () => {
+    setDraft(emptyDraft);
+    setEditingId(null);
   };
 
   const editSubscription = (subscription: Subscription) => {
@@ -395,7 +400,7 @@ export default function Home() {
         </nav>
         <div className="sidebar-note">
           <Database size={18} />
-          <p>Connection String 可留空改用 Vercel 環境變數；使用者覆蓋值只會存在瀏覽器 localStorage。</p>
+          <p>訂閱資料只寫入 SQLiteCloud，不寫入 localStorage；Connection String 可留空使用 Vercel 環境變數。</p>
         </div>
       </aside>
 
@@ -492,6 +497,17 @@ export default function Home() {
                   <input type="checkbox" checked={draft.continue} onChange={(event) => setDraft({ ...draft, continue: event.target.checked })} />
                   <span>續訂</span>
                 </label>
+                <div className="form-actions">
+                  <button className="button primary" type="button" onClick={saveDraft}>
+                    <Check size={16} />
+                    {editingId ? "確定修改" : "新增訂閱"}
+                  </button>
+                  {editingId ? (
+                    <button className="button ghost" type="button" onClick={cancelEdit}>
+                      取消
+                    </button>
+                  ) : null}
+                </div>
               </div>
 
               <div className="table-wrap">
