@@ -50,6 +50,15 @@ export function parseWorkspaceCsv(text: string, module: WorkspaceModule) {
       record[field.name] = index >= 0 ? normalizeValue(row[index] ?? "", field.type) : "";
     }
 
+    if (module.key === "routine") {
+      const linkIndex = headers.indexOf("link");
+      const link = linkIndex >= 0 ? String(normalizeValue(row[linkIndex] ?? "", "url")).trim() : "";
+      const name = String(record.name ?? "").trim();
+      if (link && name && !name.includes(link)) {
+        record.name = `${name} ${link}`;
+      }
+    }
+
     const requiredField = module.fields.find((field) => field.required);
     if (requiredField && !String(record[requiredField.name] ?? "").trim()) {
       errors.push(`第 ${rowIndex + 2} 列缺少 ${requiredField.name}，已略過`);
