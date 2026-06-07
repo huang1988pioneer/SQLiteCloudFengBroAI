@@ -27,6 +27,7 @@ type Props = {
   financeMarginRate?: number | null;
   onFinanceMarginRateChange?: (value: number | null) => void;
   subscriptionPanel?: ReactNode;
+  settingsPanel?: ReactNode;
 };
 
 function emptyRecord(module: WorkspaceModule) {
@@ -50,12 +51,14 @@ export function WorkspaceModulePanel({
   financeMarginRate = null,
   onFinanceMarginRateChange,
   subscriptionPanel,
+  settingsPanel,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeKey, setActiveKey] = useState(subscriptionPanel ? "subscription" : workspaceModules[0].key);
   const subscriptionActive = activeKey === "subscription";
+  const settingsActive = activeKey === "settings";
   const toolsActive = activeKey === "tools";
-  const dataModuleActive = !subscriptionActive && !toolsActive;
+  const dataModuleActive = !subscriptionActive && !settingsActive && !toolsActive;
   const activeModule = workspaceModules.find((module) => module.key === activeKey) || workspaceModules[0];
   const [recordsByModule, setRecordsByModule] = useState<Record<string, WorkspaceRecord[]>>({});
   const [draftByModule, setDraftByModule] = useState<Record<string, Record<string, unknown>>>({});
@@ -332,6 +335,13 @@ export function WorkspaceModulePanel({
     setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
   };
 
+  const switchSettings = () => {
+    setActiveKey("settings");
+    setEditingId(null);
+    setCsvErrors([]);
+    setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
+  };
+
   return (
     <section id="workspace-modules" className="panel module-panel">
       <div className="panel-heading module-heading">
@@ -345,6 +355,11 @@ export function WorkspaceModulePanel({
         <button className={subscriptionActive ? "active" : ""} onClick={switchSubscription}>
           訂閱
         </button>
+        {settingsPanel ? (
+          <button className={settingsActive ? "active" : ""} onClick={switchSettings}>
+            設定
+          </button>
+        ) : null}
         {workspaceModules.map((module) => (
           <button
             key={module.key}
@@ -361,6 +376,8 @@ export function WorkspaceModulePanel({
 
       {subscriptionActive ? (
         subscriptionPanel
+      ) : settingsActive ? (
+        settingsPanel
       ) : toolsActive ? (
         <FengBroToolsPanel
           financeMarginRate={financeMarginRate}

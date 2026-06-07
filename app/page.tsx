@@ -8,16 +8,11 @@ import {
   Database,
   Download,
   ExternalLink,
-  KeyRound,
   PanelLeftClose,
   PanelLeftOpen,
-  PanelRightClose,
-  PanelRightOpen,
   Pencil,
-  Plus,
   RefreshCw,
   Search,
-  Settings,
   Trash2,
   Upload,
 } from "lucide-react";
@@ -118,7 +113,6 @@ export default function Home() {
   const [creatingTable, setCreatingTable] = useState(false);
   const [syncingCloud, setSyncingCloud] = useState(false);
   const [leftCollapsed, setLeftCollapsed] = useState(false);
-  const [rightCollapsed, setRightCollapsed] = useState(false);
   const [financeMarginRate, setFinanceMarginRate] = useState<number | null>(null);
 
   useEffect(() => {
@@ -472,7 +466,6 @@ export default function Home() {
         </div>
         <nav aria-label="主選單">
           <a className="nav-item active" href="#workspace-modules" title="鋒兄工作台"><Database size={18} /><span>鋒兄工作台</span></a>
-          <a className="nav-item" href="#settings" title="鋒兄設定"><Settings size={18} /><span>鋒兄設定</span></a>
         </nav>
         <div className="sidebar-note">
           <Database size={18} />
@@ -483,13 +476,9 @@ export default function Home() {
       <section className="workspace">
         <header className="topbar">
           <div>
-            <h1>鋒兄訂閱</h1>
-            <p>相容 Appwrite 版 subscription CSV，並改為 SQLiteCloud 導向的精簡產品工作台。</p>
+            <h1>鋒兄工作台</h1>
+            <p>訂閱、食品、筆記、常用、銀行、例行與工具統一放在 SQLiteCloud 導向的工作台。</p>
           </div>
-          <button className="button primary" onClick={saveDraft}>
-            <Plus size={17} />
-            {editingId ? "儲存修改" : "新增訂閱"}
-          </button>
         </header>
 
       <section className="metrics" aria-label="訂閱摘要">
@@ -525,15 +514,42 @@ export default function Home() {
         </section>
       ) : null}
 
-        <section className={`content-grid ${rightCollapsed ? "right-collapsed" : ""}`}>
-          <div className="main-column">
-            <WorkspaceModulePanel
-              getCloudHeaders={getCloudHeaders}
-              flash={flash}
-              syncReady={settingsLoaded}
-              financeMarginRate={financeMarginRate}
-              onFinanceMarginRateChange={updateFinanceMarginRate}
-              subscriptionPanel={
+        <WorkspaceModulePanel
+          getCloudHeaders={getCloudHeaders}
+          flash={flash}
+          syncReady={settingsLoaded}
+          financeMarginRate={financeMarginRate}
+          onFinanceMarginRateChange={updateFinanceMarginRate}
+          settingsPanel={
+            <section id="settings" className="module-body module-settings-panel">
+              <div className="module-summary settings-summary">
+                <div>
+                  <strong>鋒兄設定</strong>
+                  <span>設定 SQLiteCloud 連線覆蓋值與提醒天數；留空時使用 Vercel 預設環境變數。</span>
+                </div>
+              </div>
+              <div className="module-form settings-form">
+                <Field label="SQLiteCloud Connection String" value={settings.connectionString} placeholder="留空使用 Vercel SQLITECLOUD_CONNECTION_STRING" onChange={(value) => setSettings({ ...settings, connectionString: value })} />
+                <Field label="到期提醒天數" type="number" value={settings.notificationDays} onChange={(value) => setSettings({ ...settings, notificationDays: Number(value || 0) })} />
+                <div className="settings-actions">
+                  <button className="button primary" onClick={() => saveSettings()}><Check size={16} />儲存設定</button>
+                  <button className="button ghost" onClick={() => flash("連線測試入口已建立，可接 SQLiteCloud route")}>
+                    <RefreshCw size={16} />
+                    測試
+                  </button>
+                </div>
+                <button className="button setup-button" onClick={createAllTables} disabled={creatingTable}>
+                  <Database size={16} />
+                  {creatingTable ? "生成中..." : "一鍵生成全部 Tables"}
+                </button>
+              </div>
+              <div className="notice">
+                <Bell size={17} />
+                <p>部署到 Vercel 時請設定 `SQLITECLOUD_CONNECTION_STRING`；也相容舊名 `SQLITE_CLOUD_CONNECTION_STRING`。前端欄位只作為個人覆蓋值。</p>
+              </div>
+            </section>
+          }
+          subscriptionPanel={
             <section id="subscriptions" className="subscription-module-panel">
               <div className="panel-heading">
                 <div>
@@ -689,78 +705,28 @@ export default function Home() {
                 </table>
               </div>
             </section>
-              }
-            />
+          }
+        />
 
-            <section id="schema" className="panel" hidden>
-              <div className="panel-heading">
-                <div>
-                  <h2>Table Subscription 建議格式</h2>
-                  <p>對齊參考專案 subscription 欄位，SQLiteCloud 以 SQLite 型別儲存。</p>
-                </div>
-                <button className="button ghost" onClick={copySql}><Copy size={16} />複製 SQL</button>
-              </div>
-              <div className="schema-grid">
-                {subscriptionSchema.map((field) => (
-                  <div className="schema-row" key={field.name}>
-                    <code>{field.name}</code>
-                    <span>{field.type}</span>
-                    <span>{field.required ? "必填" : "可空"}</span>
-                    <small>{field.note}</small>
-                  </div>
-                ))}
-              </div>
-              <pre className="sql-block">{subscriptionCreateTableSql}</pre>
-            </section>
+        <section id="schema" className="panel" hidden>
+          <div className="panel-heading">
+            <div>
+              <h2>Table Subscription 建議格式</h2>
+              <p>對齊參考專案 subscription 欄位，SQLiteCloud 以 SQLite 型別儲存。</p>
+            </div>
+            <button className="button ghost" onClick={copySql}><Copy size={16} />複製 SQL</button>
           </div>
-
-          <aside id="settings" className={`settings-panel ${rightCollapsed ? "is-collapsed" : ""}`}>
-            {rightCollapsed ? (
-              <button
-                className="settings-collapsed-button"
-                type="button"
-                title="展開鋒兄設定"
-                onClick={() => setRightCollapsed(false)}
-              >
-                <PanelRightOpen size={18} />
-                <KeyRound size={18} />
-              </button>
-            ) : (
-              <>
-                <div className="panel-heading compact">
-                  <div>
-                    <h2>鋒兄設定</h2>
-                    <p>設定 SQLiteCloud 連線覆蓋值與提醒天數；留空時使用 Vercel 預設環境變數。</p>
-                  </div>
-                  <button
-                    className="icon-button"
-                    type="button"
-                    title="折疊右側設定"
-                    onClick={() => setRightCollapsed(true)}
-                  >
-                    <PanelRightClose size={18} />
-                  </button>
-                </div>
-                <Field label="SQLiteCloud Connection String" value={settings.connectionString} placeholder="留空使用 Vercel SQLITECLOUD_CONNECTION_STRING" onChange={(value) => setSettings({ ...settings, connectionString: value })} />
-                <Field label="到期提醒天數" type="number" value={settings.notificationDays} onChange={(value) => setSettings({ ...settings, notificationDays: Number(value || 0) })} />
-                <div className="settings-actions">
-                  <button className="button primary" onClick={() => saveSettings()}><Check size={16} />儲存設定</button>
-                  <button className="button ghost" onClick={() => flash("連線測試入口已建立，可接 SQLiteCloud route")}>
-                    <RefreshCw size={16} />
-                    測試
-                  </button>
-                </div>
-                <button className="button setup-button" onClick={createAllTables} disabled={creatingTable}>
-                  <Database size={16} />
-                  {creatingTable ? "生成中..." : "一鍵生成全部 Tables"}
-                </button>
-                <div className="notice">
-                  <Bell size={17} />
-                  <p>部署到 Vercel 時請設定 `SQLITECLOUD_CONNECTION_STRING`；也相容舊名 `SQLITE_CLOUD_CONNECTION_STRING`。前端欄位只作為個人覆蓋值。</p>
-                </div>
-              </>
-            )}
-          </aside>
+          <div className="schema-grid">
+            {subscriptionSchema.map((field) => (
+              <div className="schema-row" key={field.name}>
+                <code>{field.name}</code>
+                <span>{field.type}</span>
+                <span>{field.required ? "必填" : "可空"}</span>
+                <small>{field.note}</small>
+              </div>
+            ))}
+          </div>
+          <pre className="sql-block">{subscriptionCreateTableSql}</pre>
         </section>
       </section>
       {savedSignal ? <div className="toast">{savedSignal}</div> : null}
