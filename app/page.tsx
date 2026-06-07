@@ -445,23 +445,6 @@ export default function Home() {
 
   return (
     <main className="app-shell">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-mark">鋒</div>
-          <div className="brand-copy">
-            <strong>鋒兄 AI</strong>
-            <span>SQLiteCloud Workspace</span>
-          </div>
-        </div>
-        <nav aria-label="主選單">
-          <a className="nav-item active" href="#workspace-modules" title="鋒兄工作台"><Database size={18} /><span>鋒兄工作台</span></a>
-        </nav>
-        <div className="sidebar-note">
-          <Database size={18} />
-          <p>鋒兄工作台資料只寫入 SQLiteCloud，不寫入 localStorage；Connection String 可留空使用 Vercel 環境變數。</p>
-        </div>
-      </aside>
-
       <section className="workspace">
         <header className="topbar">
           <div>
