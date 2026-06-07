@@ -19,7 +19,7 @@ import {
   parseAppwriteSubscriptionCsv,
   stringifyAppwriteSubscriptionCsv,
 } from "@/lib/appwrite-csv";
-import { WorkspaceModulePanel } from "@/components/WorkspaceModulePanel";
+import { WorkspaceModulePanel, type WorkspaceMetric } from "@/components/WorkspaceModulePanel";
 import { subscriptionCreateTableSql, subscriptionSchema } from "@/lib/subscription-schema";
 import type { FengBroSettings, Subscription, SubscriptionDraft } from "@/types/subscription";
 
@@ -111,6 +111,7 @@ export default function Home() {
   const [creatingTable, setCreatingTable] = useState(false);
   const [syncingCloud, setSyncingCloud] = useState(false);
   const [financeMarginRate, setFinanceMarginRate] = useState<number | null>(null);
+  const [dashboardMetrics, setDashboardMetrics] = useState<WorkspaceMetric[]>([]);
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(settingsKey);
@@ -150,6 +151,12 @@ export default function Home() {
     const total = active.reduce((sum, item) => sum + toTwd(item), 0);
     return { active: subscriptions.length, soon: soon.length, total };
   }, [settings.notificationDays, subscriptions]);
+  const subscriptionMetrics = useMemo<WorkspaceMetric[]>(() => [
+    { label: "訂閱總數", value: stats.active },
+    { label: "提醒天數內", value: stats.soon },
+    { label: "約當月費", value: currencyLabel(stats.total, "TWD") },
+  ], [stats.active, stats.soon, stats.total]);
+  const visibleMetrics = dashboardMetrics.length > 0 ? dashboardMetrics : subscriptionMetrics;
 
   const importPercent = importProgress.total
     ? Math.min(100, Math.round((importProgress.current / importProgress.total) * 100))
@@ -454,18 +461,12 @@ export default function Home() {
         </header>
 
       <section className="metrics" aria-label="訂閱摘要">
-          <div className="metric">
-            <span>訂閱總數</span>
-            <strong>{stats.active}</strong>
-          </div>
-          <div className="metric">
-            <span>提醒天數內</span>
-            <strong>{stats.soon}</strong>
-          </div>
-          <div className="metric">
-            <span>約當月費</span>
-            <strong>{currencyLabel(stats.total, "TWD")}</strong>
-          </div>
+          {visibleMetrics.map((metric) => (
+            <div className="metric" key={metric.label}>
+              <span>{metric.label}</span>
+              <strong>{metric.value}</strong>
+            </div>
+          ))}
       </section>
 
       {shouldWarnFinanceMargin ? (
@@ -492,6 +493,8 @@ export default function Home() {
           syncReady={settingsLoaded}
           financeMarginRate={financeMarginRate}
           onFinanceMarginRateChange={updateFinanceMarginRate}
+          subscriptionMetrics={subscriptionMetrics}
+          onMetricsChange={setDashboardMetrics}
           settingsPanel={
             <section id="settings" className="module-body module-settings-panel">
               <div className="module-summary settings-summary">

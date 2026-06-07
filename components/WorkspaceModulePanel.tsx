@@ -20,6 +20,11 @@ type ImportProgress = {
   label: string;
 };
 
+export type WorkspaceMetric = {
+  label: string;
+  value: string | number;
+};
+
 type Props = {
   getCloudHeaders: () => Record<string, string>;
   flash: (message: string) => void;
@@ -27,7 +32,9 @@ type Props = {
   financeMarginRate?: number | null;
   onFinanceMarginRateChange?: (value: number | null) => void;
   subscriptionPanel?: ReactNode;
+  subscriptionMetrics?: WorkspaceMetric[];
   settingsPanel?: ReactNode;
+  onMetricsChange?: (metrics: WorkspaceMetric[]) => void;
 };
 
 function emptyRecord(module: WorkspaceModule) {
@@ -51,7 +58,9 @@ export function WorkspaceModulePanel({
   financeMarginRate = null,
   onFinanceMarginRateChange,
   subscriptionPanel,
+  subscriptionMetrics = [],
   settingsPanel,
+  onMetricsChange,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
   const [activeKey, setActiveKey] = useState(subscriptionPanel ? "subscription" : workspaceModules[0].key);
@@ -81,6 +90,33 @@ export function WorkspaceModulePanel({
     const total = amountField ? records.reduce((sum, record) => sum + Number(record[amountField.name] || 0), 0) : records.length;
     return { count: records.length, total, totalLabel: amountField ? amountField.label : "筆數" };
   }, [activeModule, records]);
+
+  const activeMetrics = useMemo<WorkspaceMetric[]>(() => {
+    if (subscriptionActive) return subscriptionMetrics;
+    if (settingsActive) {
+      return [
+        { label: "設定項目", value: 2 },
+        { label: "資料來源", value: "SQLiteCloud" },
+        { label: "環境變數", value: "Vercel" },
+      ];
+    }
+    if (toolsActive) {
+      return [
+        { label: "工具項目", value: 4 },
+        { label: "金融警戒", value: financeMarginRate !== null ? `${financeMarginRate.toFixed(1)}%` : "未載入" },
+        { label: "資料來源", value: "外部 API" },
+      ];
+    }
+    return [
+      { label: `${activeModule.shortTitle}筆數`, value: records.length },
+      { label: totals.totalLabel, value: totals.total },
+      { label: "資料表", value: activeModule.table },
+    ];
+  }, [activeModule, financeMarginRate, records.length, settingsActive, subscriptionActive, subscriptionMetrics, toolsActive, totals.total, totals.totalLabel]);
+
+  useEffect(() => {
+    onMetricsChange?.(activeMetrics);
+  }, [activeMetrics, onMetricsChange]);
 
   const setDraftValue = (field: string, value: unknown) => {
     setDraftByModule((items) => ({
