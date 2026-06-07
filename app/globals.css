@@ -342,6 +342,10 @@ h2 {
   display: grid;
 }
 
+.subscription-module-panel {
+  display: grid;
+}
+
 .module-heading {
   align-items: start;
 }

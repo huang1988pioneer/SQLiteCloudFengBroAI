@@ -527,7 +527,14 @@ export default function Home() {
 
         <section className={`content-grid ${rightCollapsed ? "right-collapsed" : ""}`}>
           <div className="main-column">
-            <section id="subscriptions" className="panel">
+            <WorkspaceModulePanel
+              getCloudHeaders={getCloudHeaders}
+              flash={flash}
+              syncReady={settingsLoaded}
+              financeMarginRate={financeMarginRate}
+              onFinanceMarginRateChange={updateFinanceMarginRate}
+              subscriptionPanel={
+            <section id="subscriptions" className="subscription-module-panel">
               <div className="panel-heading">
                 <div>
                   <h2>訂閱清單</h2>
@@ -682,16 +689,10 @@ export default function Home() {
                 </table>
               </div>
             </section>
-
-            <WorkspaceModulePanel
-              getCloudHeaders={getCloudHeaders}
-              flash={flash}
-              syncReady={settingsLoaded}
-              financeMarginRate={financeMarginRate}
-              onFinanceMarginRateChange={updateFinanceMarginRate}
+              }
             />
 
-            <section id="schema" className="panel">
+            <section id="schema" className="panel" hidden>
               <div className="panel-heading">
                 <div>
                   <h2>Table Subscription 建議格式</h2>

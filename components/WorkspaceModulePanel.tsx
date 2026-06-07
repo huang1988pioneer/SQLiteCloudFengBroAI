@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { ArticleCardView } from "@/components/ArticleCardView";
 import { BankCardView } from "@/components/BankCardView";
@@ -25,6 +26,7 @@ type Props = {
   syncReady?: boolean;
   financeMarginRate?: number | null;
   onFinanceMarginRateChange?: (value: number | null) => void;
+  subscriptionPanel?: ReactNode;
 };
 
 function emptyRecord(module: WorkspaceModule) {
@@ -47,10 +49,13 @@ export function WorkspaceModulePanel({
   syncReady = true,
   financeMarginRate = null,
   onFinanceMarginRateChange,
+  subscriptionPanel,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
-  const [activeKey, setActiveKey] = useState(workspaceModules[0].key);
+  const [activeKey, setActiveKey] = useState(subscriptionPanel ? "subscription" : workspaceModules[0].key);
+  const subscriptionActive = activeKey === "subscription";
   const toolsActive = activeKey === "tools";
+  const dataModuleActive = !subscriptionActive && !toolsActive;
   const activeModule = workspaceModules.find((module) => module.key === activeKey) || workspaceModules[0];
   const [recordsByModule, setRecordsByModule] = useState<Record<string, WorkspaceRecord[]>>({});
   const [draftByModule, setDraftByModule] = useState<Record<string, Record<string, unknown>>>({});
@@ -102,12 +107,12 @@ export function WorkspaceModulePanel({
   }, [activeModule, flash, getCloudHeaders]);
 
   useEffect(() => {
-    if (!syncReady || toolsActive) return;
+    if (!syncReady || !dataModuleActive) return;
     void fetchRecords(activeModule, true);
-  }, [activeModule, fetchRecords, syncReady, toolsActive]);
+  }, [activeModule, dataModuleActive, fetchRecords, syncReady]);
 
   useEffect(() => {
-    if (!syncReady || toolsActive) return;
+    if (!syncReady || !dataModuleActive) return;
 
     const refreshVisibleModule = () => {
       if (document.visibilityState === "visible") {
@@ -124,7 +129,7 @@ export function WorkspaceModulePanel({
       window.removeEventListener("focus", refreshVisibleModule);
       document.removeEventListener("visibilitychange", refreshVisibleModule);
     };
-  }, [activeModule, fetchRecords, syncReady, toolsActive]);
+  }, [activeModule, dataModuleActive, fetchRecords, syncReady]);
 
   const isArticle = activeModule.key === "article";
   const isBank = activeModule.key === "bank";
@@ -320,6 +325,13 @@ export function WorkspaceModulePanel({
     setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
   };
 
+  const switchSubscription = () => {
+    setActiveKey("subscription");
+    setEditingId(null);
+    setCsvErrors([]);
+    setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
+  };
+
   return (
     <section id="workspace-modules" className="panel module-panel">
       <div className="panel-heading module-heading">
@@ -330,13 +342,13 @@ export function WorkspaceModulePanel({
       </div>
 
       <div className="module-tabs">
-        <button onClick={() => document.getElementById("subscriptions")?.scrollIntoView({ behavior: "smooth", block: "start" })}>
+        <button className={subscriptionActive ? "active" : ""} onClick={switchSubscription}>
           訂閱
         </button>
         {workspaceModules.map((module) => (
           <button
             key={module.key}
-            className={!toolsActive && module.key === activeModule.key ? "active" : ""}
+            className={dataModuleActive && module.key === activeModule.key ? "active" : ""}
             onClick={() => switchModule(module)}
           >
             {module.shortTitle}
@@ -347,7 +359,9 @@ export function WorkspaceModulePanel({
         </button>
       </div>
 
-      {toolsActive ? (
+      {subscriptionActive ? (
+        subscriptionPanel
+      ) : toolsActive ? (
         <FengBroToolsPanel
           financeMarginRate={financeMarginRate}
           onFinanceMarginRateChange={onFinanceMarginRateChange}
