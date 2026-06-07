@@ -355,11 +355,6 @@ export function WorkspaceModulePanel({
         <button className={subscriptionActive ? "active" : ""} onClick={switchSubscription}>
           訂閱
         </button>
-        {settingsPanel ? (
-          <button className={settingsActive ? "active" : ""} onClick={switchSettings}>
-            設定
-          </button>
-        ) : null}
         {workspaceModules.map((module) => (
           <button
             key={module.key}
@@ -372,6 +367,11 @@ export function WorkspaceModulePanel({
         <button className={toolsActive ? "active" : ""} onClick={switchTools}>
           工具
         </button>
+        {settingsPanel ? (
+          <button className={settingsActive ? "active" : ""} onClick={switchSettings}>
+            鋒兄設定
+          </button>
+        ) : null}
       </div>
 
       {subscriptionActive ? (
