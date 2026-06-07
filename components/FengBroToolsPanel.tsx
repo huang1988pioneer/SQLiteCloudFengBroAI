@@ -131,6 +131,16 @@ type FinanceResult = {
   };
 };
 
+type CodeStats = {
+  generatedAt: string;
+  root: string;
+  totalFiles: number;
+  totalLines: number;
+  totalBytes: number;
+  byExtension: Array<{ extension: string; files: number; lines: number; bytes: number }>;
+  topFiles: Array<{ path: string; extension: string; lines: number; bytes: number }>;
+};
+
 type Props = {
   financeMarginRate?: number | null;
   onFinanceMarginRateChange?: (value: number | null) => void;
@@ -185,19 +195,24 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
   const [priceResult, setPriceResult] = useState<PriceResult | null>(null);
   const [priceLoading, setPriceLoading] = useState(false);
   const [priceError, setPriceError] = useState("");
-  const [mobileQuery, setMobileQuery] = useState("iPhone");
+  const [mobileQuery, setMobileQuery] = useState("iPhone 17");
   const [mobileResult, setMobileResult] = useState<MobileResult | null>(null);
   const [mobileLoading, setMobileLoading] = useState(false);
   const [mobileError, setMobileError] = useState("");
   const [tubeResult, setTubeResult] = useState<TubeResult | null>(null);
   const [tubeLoading, setTubeLoading] = useState(false);
   const [tubeError, setTubeError] = useState("");
+  const [tubeLoadedOnce, setTubeLoadedOnce] = useState(false);
   const [tubeChannels, setTubeChannels] = useState<FengbroTubeChannelConfig[]>(getSavedTubeChannels);
   const [tubeAliasDraft, setTubeAliasDraft] = useState("");
   const [tubeUrlDraft, setTubeUrlDraft] = useState("");
   const [financeResult, setFinanceResult] = useState<FinanceResult | null>(null);
   const [financeLoading, setFinanceLoading] = useState(false);
   const [financeError, setFinanceError] = useState("");
+  const [financeLoadedOnce, setFinanceLoadedOnce] = useState(false);
+  const [codeStats, setCodeStats] = useState<CodeStats | null>(null);
+  const [codeStatsLoading, setCodeStatsLoading] = useState(false);
+  const [codeStatsError, setCodeStatsError] = useState("");
 
   useEffect(() => {
     const saved = window.localStorage.getItem(priceSourceKey);
@@ -227,6 +242,25 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
   }, [priceResult]);
 
   const financeGroups = useMemo(() => groupFinanceQuotes(financeResult?.quotes || []), [financeResult]);
+  const headlineFinanceQuotes = useMemo(() => {
+    const headlineIds = new Set(["taiex", "tsmc", "dow", "sp500", "nasdaq", "vix", "bitcoin", "usd-twd"]);
+    return (financeResult?.quotes || []).filter((quote) => headlineIds.has(quote.id));
+  }, [financeResult]);
+
+  const loadCodeStats = useCallback(async () => {
+    setCodeStatsLoading(true);
+    setCodeStatsError("");
+    try {
+      const response = await fetch("/api/code-stats");
+      const result = (await response.json()) as CodeStats & { error?: string };
+      if (!response.ok || result.error) throw new Error(result.error || "程式碼行數統計失敗");
+      setCodeStats(result);
+    } catch (error) {
+      setCodeStatsError(error instanceof Error ? error.message : "程式碼行數統計失敗");
+    } finally {
+      setCodeStatsLoading(false);
+    }
+  }, []);
 
   const runPriceCompare = async () => {
     if (!priceUrl.trim()) {
@@ -248,11 +282,11 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
     }
   };
 
-  const loadMobile = async (refresh = false) => {
+  const loadMobile = async (refresh = false, queryOverride = mobileQuery) => {
     setMobileLoading(true);
     setMobileError("");
     try {
-      const response = await fetch(`/api/landtop?query=${encodeURIComponent(mobileQuery)}${refresh ? "&refresh=1" : ""}`);
+      const response = await fetch(`/api/landtop?query=${encodeURIComponent(queryOverride)}${refresh ? "&refresh=1" : ""}`);
       const result = (await response.json()) as MobileResult & { error?: string };
       if (!response.ok || result.error) throw new Error(result.error || "手機比價資料抓取失敗");
       setMobileResult(result);
@@ -265,6 +299,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
   };
 
   const loadTube = useCallback(async () => {
+    setTubeLoadedOnce(true);
     setTubeLoading(true);
     setTubeError("");
     try {
@@ -284,7 +319,8 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
     }
   }, [flash, tubeChannels]);
 
-  const loadFinance = async () => {
+  const loadFinance = useCallback(async () => {
+    setFinanceLoadedOnce(true);
     setFinanceLoading(true);
     setFinanceError("");
     try {
@@ -298,7 +334,23 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
     } finally {
       setFinanceLoading(false);
     }
-  };
+  }, [flash]);
+
+  useEffect(() => {
+    void loadCodeStats();
+  }, [loadCodeStats]);
+
+  useEffect(() => {
+    if (activeTab === "fengbro-tube" && !tubeLoadedOnce && !tubeLoading) {
+      void loadTube();
+    }
+  }, [activeTab, loadTube, tubeLoadedOnce, tubeLoading]);
+
+  useEffect(() => {
+    if (activeTab === "fengbro-finance" && !financeLoadedOnce && !financeLoading) {
+      void loadFinance();
+    }
+  }, [activeTab, financeLoadedOnce, financeLoading, loadFinance]);
 
   const saveTubeChannel = () => {
     const sourceUrl = normalizeFengbroTubeSource(tubeUrlDraft);
@@ -322,6 +374,42 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
           <span>依照 Appwrite 版工具模組移植：鋒兄比價、手機比價、鋒兄Tube、鋒兄金融。</span>
         </div>
       </div>
+
+      <section className="code-stats-panel" aria-label="程式碼行數統計">
+        <div className="code-stats-heading">
+          <strong><BarChart3 size={17} />程式碼行數</strong>
+          <button className="button ghost" type="button" onClick={() => void loadCodeStats()} disabled={codeStatsLoading}>
+            <RefreshCw size={16} />
+            {codeStatsLoading ? "統計中..." : "重新統計"}
+          </button>
+        </div>
+        {codeStatsError ? <div className="tool-error">{codeStatsError}</div> : null}
+        {codeStats ? (
+          <>
+            <div className="code-stats-grid">
+              <article>
+                <span>總行數</span>
+                <strong>{codeStats.totalLines.toLocaleString("zh-TW")}</strong>
+              </article>
+              <article>
+                <span>檔案數</span>
+                <strong>{codeStats.totalFiles.toLocaleString("zh-TW")}</strong>
+              </article>
+              <article>
+                <span>專案</span>
+                <strong>{codeStats.root}</strong>
+              </article>
+            </div>
+            <div className="code-extension-list">
+              {codeStats.byExtension.slice(0, 6).map((item) => (
+                <span key={item.extension}>{item.extension} {item.lines.toLocaleString("zh-TW")} 行</span>
+              ))}
+            </div>
+          </>
+        ) : codeStatsLoading ? (
+          <div className="tool-empty">正在統計目前 repo 的程式碼行數...</div>
+        ) : null}
+      </section>
 
       <div className="tool-tabs" role="tablist" aria-label="鋒兄工具">
         {toolTabs.map((tab) => (
@@ -392,14 +480,30 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
             </button>
           </div>
           <div className="tool-search-row">
-            <input value={mobileQuery} onChange={(event) => setMobileQuery(event.target.value)} placeholder="iPhone / Samsung / A17" />
+            <input value={mobileQuery} onChange={(event) => setMobileQuery(event.target.value)} placeholder="iPhone 17 / Samsung 26" />
             <button className="button primary" onClick={() => void loadMobile()} disabled={mobileLoading}>
               <Search size={16} />
               {mobileLoading ? "載入中..." : "搜尋手機"}
             </button>
           </div>
+          <div className="tool-chip-row" aria-label="手機比價預設關鍵字">
+            {["iPhone 17", "Samsung 26"].map((keyword) => (
+              <button
+                key={keyword}
+                className={mobileQuery === keyword ? "active" : ""}
+                type="button"
+                onClick={() => {
+                  setMobileQuery(keyword);
+                  void loadMobile(false, keyword);
+                }}
+              >
+                {keyword}
+              </button>
+            ))}
+          </div>
           {mobileError ? <div className="tool-error">{mobileError}</div> : null}
           {mobileResult?.warnings?.map((warning) => <div className="tool-warning" key={warning}>{warning}</div>)}
+          {!mobileResult && !mobileLoading ? <div className="tool-empty">預設可用 iPhone 17 或 Samsung 26 開始比價。</div> : null}
           <div className="phone-grid">
             {(mobileResult?.products || []).slice(0, 60).map((product) => (
               <article key={product.id} className="phone-card">
@@ -450,6 +554,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
               </div>
             ))}
           </div>
+          {tubeLoading ? <div className="tool-empty">正在讀取 YouTube 影片列表...</div> : null}
           {tubeResult?.recentVideos?.length ? (
             <>
               <h4 className="tool-subheading">三天內新影片</h4>
@@ -479,6 +584,30 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
                 </article>
               ))}
             </div>
+          ) : null}
+          {tubeResult?.channels?.length ? (
+            <>
+              <h4 className="tool-subheading">頻道影片列表</h4>
+              <div className="channel-video-list">
+                {tubeResult.channels.map((channel) => (
+                  <article key={`videos-${channel.sourceUrl}`} className="channel-video-card">
+                    <strong>{channel.title}</strong>
+                    {channel.videos.length ? (
+                      channel.videos.slice(0, 5).map((video) => (
+                        <a key={video.videoId} href={video.url} target="_blank" rel="noreferrer">
+                          <span>{video.title}</span>
+                          <small>{video.publishedAt ? new Date(video.publishedAt).toLocaleDateString("zh-TW") : "-"}</small>
+                        </a>
+                      ))
+                    ) : (
+                      <p>{channel.error || "目前沒有抓到影片，請重新整理或檢查頻道來源。"}</p>
+                    )}
+                  </article>
+                ))}
+              </div>
+            </>
+          ) : !tubeLoading ? (
+            <div className="tool-empty">鋒兄Tube 會自動讀取影片列表，也可以按重新整理。</div>
           ) : null}
         </section>
       ) : (
@@ -523,6 +652,25 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
                 </a>
               ))}
             </div>
+          ) : null}
+          {financeLoading ? <div className="tool-empty">正在讀取市場指數與金融報價...</div> : null}
+          {headlineFinanceQuotes.length ? (
+            <>
+              <h4 className="tool-subheading">市場指數</h4>
+              <div className="finance-index-grid">
+                {headlineFinanceQuotes.map((quote) => (
+                  <a href={quote.sourceUrl} target="_blank" rel="noreferrer" key={`headline-${quote.id}`}>
+                    <span>{quote.name}</span>
+                    <strong>{formatNumber(quote.price, quote.group === "rates" ? 3 : 2)} {quote.currency}</strong>
+                    <small className={(quote.changePercent || 0) < 0 ? "negative" : "positive"}>
+                      {quote.changePercent == null ? "-" : `${quote.changePercent.toFixed(2)}%`}
+                    </small>
+                  </a>
+                ))}
+              </div>
+            </>
+          ) : !financeLoading && !financeResult ? (
+            <div className="tool-empty">鋒兄金融會自動載入台股、美股、匯率與 Shiller PE 指數。</div>
           ) : null}
           {financeResult ? (
             <div className="tool-result-grid">

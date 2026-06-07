@@ -525,16 +525,8 @@ export default function Home() {
         </section>
       ) : null}
 
-      <section className={`content-grid ${rightCollapsed ? "right-collapsed" : ""}`}>
-        <div className="main-column">
-            <WorkspaceModulePanel
-              getCloudHeaders={getCloudHeaders}
-              flash={flash}
-              syncReady={settingsLoaded}
-              financeMarginRate={financeMarginRate}
-              onFinanceMarginRateChange={updateFinanceMarginRate}
-            />
-
+        <section className={`content-grid ${rightCollapsed ? "right-collapsed" : ""}`}>
+          <div className="main-column">
             <section id="subscriptions" className="panel">
               <div className="panel-heading">
                 <div>
@@ -690,6 +682,14 @@ export default function Home() {
                 </table>
               </div>
             </section>
+
+            <WorkspaceModulePanel
+              getCloudHeaders={getCloudHeaders}
+              flash={flash}
+              syncReady={settingsLoaded}
+              financeMarginRate={financeMarginRate}
+              onFinanceMarginRateChange={updateFinanceMarginRate}
+            />
 
             <section id="schema" className="panel">
               <div className="panel-heading">
