@@ -8,8 +8,6 @@ import {
   Database,
   Download,
   ExternalLink,
-  PanelLeftClose,
-  PanelLeftOpen,
   Pencil,
   RefreshCw,
   Search,
@@ -112,7 +110,6 @@ export default function Home() {
   });
   const [creatingTable, setCreatingTable] = useState(false);
   const [syncingCloud, setSyncingCloud] = useState(false);
-  const [leftCollapsed, setLeftCollapsed] = useState(false);
   const [financeMarginRate, setFinanceMarginRate] = useState<number | null>(null);
 
   useEffect(() => {
@@ -447,22 +444,14 @@ export default function Home() {
   };
 
   return (
-    <main className={`app-shell ${leftCollapsed ? "left-collapsed" : ""}`}>
-      <aside className={`sidebar ${leftCollapsed ? "is-collapsed" : ""}`}>
+    <main className="app-shell">
+      <aside className="sidebar">
         <div className="brand">
           <div className="brand-mark">鋒</div>
           <div className="brand-copy">
             <strong>鋒兄 AI</strong>
             <span>SQLiteCloud Workspace</span>
           </div>
-          <button
-            className="sidebar-toggle"
-            type="button"
-            title={leftCollapsed ? "展開左側邊" : "折疊左側邊"}
-            onClick={() => setLeftCollapsed((value) => !value)}
-          >
-            {leftCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
-          </button>
         </div>
         <nav aria-label="主選單">
           <a className="nav-item active" href="#workspace-modules" title="鋒兄工作台"><Database size={18} /><span>鋒兄工作台</span></a>
@@ -574,7 +563,7 @@ export default function Home() {
                   />
                   <button className="button ghost" onClick={() => importInputRef.current?.click()} disabled={syncingCloud}>
                     <Upload size={16} />
-                    {syncingCloud ? "匯入中..." : "直接匯入資料庫"}
+                    {syncingCloud ? "匯入中..." : "匯入 CSV"}
                   </button>
                   <button className="button ghost" onClick={exportCsv}>
                     <Download size={16} />
