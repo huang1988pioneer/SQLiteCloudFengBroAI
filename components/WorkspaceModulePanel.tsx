@@ -9,6 +9,7 @@ import { CommonAccountCardView } from "@/components/CommonAccountCardView";
 import { FengBroToolsPanel } from "@/components/FengBroToolsPanel";
 import { FoodCardView } from "@/components/FoodCardView";
 import { RoutineCardView } from "@/components/RoutineCardView";
+import { downloadCsvFile } from "@/lib/download-file";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
 import { workspaceModules } from "@/lib/workspace-modules";
 import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
@@ -337,15 +338,7 @@ export function WorkspaceModulePanel({
 
   const exportCsv = () => {
     const csv = stringifyWorkspaceCsv(records, activeModule);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `${activeModule.csvName}-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    downloadCsvFile(`${activeModule.csvName}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     flash(`已匯出 ${activeModule.title} CSV`);
   };
 

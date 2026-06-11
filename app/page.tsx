@@ -20,6 +20,7 @@ import {
   stringifyAppwriteSubscriptionCsv,
 } from "@/lib/appwrite-csv";
 import { WorkspaceModulePanel, type WorkspaceMetric } from "@/components/WorkspaceModulePanel";
+import { downloadCsvFile } from "@/lib/download-file";
 import { subscriptionCreateTableSql, subscriptionSchema } from "@/lib/subscription-schema";
 import type { FengBroSettings, Subscription, SubscriptionDraft } from "@/types/subscription";
 
@@ -381,15 +382,7 @@ export default function Home() {
 
   const exportCsv = () => {
     const csv = stringifyAppwriteSubscriptionCsv(subscriptions);
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `appwrite-subscription-${new Date().toISOString().slice(0, 10)}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    downloadCsvFile(`appwrite-subscription-${new Date().toISOString().slice(0, 10)}.csv`, csv);
     flash("已匯出 Appwrite CSV");
   };
 
