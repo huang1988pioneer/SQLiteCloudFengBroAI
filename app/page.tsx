@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
   Check,
-  Copy,
   Database,
   Download,
   ExternalLink,
@@ -21,7 +20,6 @@ import {
 } from "@/lib/appwrite-csv";
 import { WorkspaceModulePanel, type WorkspaceMetric } from "@/components/WorkspaceModulePanel";
 import { downloadCsvFile } from "@/lib/download-file";
-import { subscriptionCreateTableSql, subscriptionSchema } from "@/lib/subscription-schema";
 import type { FengBroSettings, Subscription, SubscriptionDraft } from "@/types/subscription";
 
 const settingsKey = "fengbro.sqlitecloud.settings";
@@ -375,11 +373,6 @@ export default function Home() {
     });
   };
 
-  const copySql = async () => {
-    await navigator.clipboard.writeText(subscriptionCreateTableSql);
-    flash("SQL 已複製");
-  };
-
   const exportCsv = () => {
     const csv = stringifyAppwriteSubscriptionCsv(subscriptions);
     downloadCsvFile(`appwrite-subscription-${new Date().toISOString().slice(0, 10)}.csv`, csv);
@@ -675,27 +668,6 @@ export default function Home() {
             </section>
           }
         />
-
-        <section id="schema" className="panel" hidden>
-          <div className="panel-heading">
-            <div>
-              <h2>Table Subscription 建議格式</h2>
-              <p>對齊參考專案 subscription 欄位，SQLiteCloud 以 SQLite 型別儲存。</p>
-            </div>
-            <button className="button ghost" onClick={copySql}><Copy size={16} />複製 SQL</button>
-          </div>
-          <div className="schema-grid">
-            {subscriptionSchema.map((field) => (
-              <div className="schema-row" key={field.name}>
-                <code>{field.name}</code>
-                <span>{field.type}</span>
-                <span>{field.required ? "必填" : "可空"}</span>
-                <small>{field.note}</small>
-              </div>
-            ))}
-          </div>
-          <pre className="sql-block">{subscriptionCreateTableSql}</pre>
-        </section>
       </section>
       {savedSignal ? <div className="toast">{savedSignal}</div> : null}
     </main>

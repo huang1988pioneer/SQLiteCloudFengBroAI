@@ -421,7 +421,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
       </div>
 
       {activeTab === "price-compare" ? (
-        <section className="tool-section">
+        <section className="tool-section tool-section-price-compare">
           <div className="tool-section-heading">
             <div>
               <h3>鋒兄比價</h3>
@@ -468,7 +468,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
           ) : null}
         </section>
       ) : activeTab === "landtop" ? (
-        <section className="tool-section">
+        <section className="tool-section tool-section-landtop">
           <div className="tool-section-heading">
             <div>
               <h3>手機比價</h3>
@@ -523,7 +523,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
           </div>
         </section>
       ) : activeTab === "fengbro-tube" ? (
-        <section className="tool-section">
+        <section className="tool-section tool-section-fengbro-tube">
           <div className="tool-section-heading">
             <div>
               <h3>鋒兄Tube</h3>
@@ -611,7 +611,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
           ) : null}
         </section>
       ) : (
-        <section className="tool-section">
+        <section className="tool-section tool-section-fengbro-finance">
           <div className="tool-section-heading">
             <div>
               <h3>鋒兄金融</h3>
