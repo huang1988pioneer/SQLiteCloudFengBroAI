@@ -3,15 +3,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
+  BarChart3,
   Check,
+  Command,
+  CreditCard,
   Database,
   Download,
   ExternalLink,
+  FileText,
+  Home as HomeIcon,
+  Landmark,
   Pencil,
+  Play,
+  Package,
   RefreshCw,
   Search,
+  Settings,
+  Smartphone,
+  Star,
   Trash2,
   Upload,
+  Wrench,
 } from "lucide-react";
 import {
   appwriteCsvHeaders,
@@ -88,6 +100,124 @@ function Field({
       <span>{label}</span>
       <input type={type} value={value} placeholder={placeholder} onChange={(event) => onChange(event.target.value)} />
     </label>
+  );
+}
+
+const primaryNavItems = [
+  { label: "鋒兄首頁", icon: <HomeIcon size={16} /> },
+  { label: "鋒兄儀表", icon: <BarChart3 size={16} /> },
+  { label: "鋒兄訂閱", icon: <CreditCard size={16} /> },
+  { label: "鋒兄食品（+ 商品庫存）", icon: <Package size={16} /> },
+  { label: "鋒兄筆記", icon: <FileText size={16} /> },
+  { label: "鋒兄常用", icon: <Star size={16} /> },
+  { label: "鋒兄銀行（+ 電子票證）", icon: <Landmark size={16} /> },
+  { label: "鋒兄例行", icon: <RefreshCw size={16} /> },
+];
+
+const toolNavItems = [
+  { label: "鋒兄比價", icon: <Search size={15} />, active: true },
+  { label: "手機比價", icon: <Smartphone size={15} /> },
+  { label: "鋒兄Tube", icon: <Play size={15} /> },
+  { label: "鋒兄金融", icon: <BarChart3 size={15} /> },
+];
+
+function formatTodayLabel() {
+  return new Intl.DateTimeFormat("zh-TW", {
+    month: "numeric",
+    day: "numeric",
+    weekday: "short",
+    timeZone: "Asia/Taipei",
+  }).format(new Date());
+}
+
+function scrollToWorkspace() {
+  document.getElementById("workspace-modules")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function ConsoleSidebar() {
+  return (
+    <aside className="console-sidebar" aria-label="鋒兄 Appwrite Console 導覽">
+      <div className="console-sidebar-inner">
+        <div className="console-brand">
+          <div className="console-brand-mark">
+            <Command size={17} />
+          </div>
+          <div>
+            <span>FENGBRO</span>
+            <strong>AI Appwrite Console</strong>
+          </div>
+        </div>
+        <div className="console-design-mode">
+          <span>DESIGN MODE</span>
+          <strong>Impeccable 2026</strong>
+        </div>
+
+        <nav className="console-menu">
+          {primaryNavItems.map((item) => (
+            <button className="console-nav-item" type="button" key={item.label} onClick={scrollToWorkspace}>
+              <span>{item.icon}</span>
+              <b>{item.label}</b>
+            </button>
+          ))}
+
+          <div className="console-nav-group">
+            <button className="console-nav-item active" type="button" onClick={scrollToWorkspace}>
+              <span>
+                <Wrench size={16} />
+              </span>
+              <b>鋒兄工具</b>
+              <small>4 個工具</small>
+            </button>
+            <div className="console-nav-children">
+              {toolNavItems.map((item) => (
+                <button
+                  className={`console-child-item${item.active ? " active" : ""}`}
+                  type="button"
+                  key={item.label}
+                  onClick={scrollToWorkspace}
+                >
+                  <span>{item.icon}</span>
+                  <b>{item.label}</b>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <button className="console-nav-item" type="button" onClick={scrollToWorkspace}>
+            <span>
+              <Settings size={16} />
+            </span>
+            <b>鋒兄設定</b>
+          </button>
+        </nav>
+
+        <div className="console-sidebar-note">
+          <strong>Unified Household Workspace</strong>
+          <span>SQLiteCloud、CSV、工具與金融提示集中管理。</span>
+        </div>
+      </div>
+    </aside>
+  );
+}
+
+function ConsoleTopSurface() {
+  return (
+    <header className="console-top-surface">
+      <div>
+        <span>ACTIVE SURFACE</span>
+        <strong>鋒兄比價</strong>
+      </div>
+      <div className="console-surface-pills" aria-label="今日與模組資訊">
+        <span>
+          <b>TODAY</b>
+          {formatTodayLabel()}
+        </span>
+        <span>
+          <b>MODULES</b>
+          16 個模組
+        </span>
+      </div>
+    </header>
   );
 }
 
@@ -437,12 +567,14 @@ export default function Home() {
   };
 
   return (
-    <main className="app-shell">
-      <section className="workspace">
+    <main className="app-shell console-shell">
+      <ConsoleSidebar />
+      <section className="workspace console-workspace">
+        <ConsoleTopSurface />
         <header className="topbar">
           <div>
-            <h1>鋒兄工作台</h1>
-            <p>訂閱、食品、筆記、常用、銀行、例行與工具統一放在 SQLiteCloud 導向的工作台。</p>
+            <h1>鋒兄工具</h1>
+            <p>工具模組集中入口與手機比價工作台；資料模組仍在同一個 SQLiteCloud 工作台內。</p>
           </div>
         </header>
 
@@ -473,13 +605,15 @@ export default function Home() {
         </section>
       ) : null}
 
-        <WorkspaceModulePanel
+        <div id="workspace-modules">
+          <WorkspaceModulePanel
           getCloudHeaders={getCloudHeaders}
           flash={flash}
           syncReady={settingsLoaded}
           financeMarginRate={financeMarginRate}
           onFinanceMarginRateChange={updateFinanceMarginRate}
           subscriptionMetrics={subscriptionMetrics}
+          initialKey="tools"
           onMetricsChange={setDashboardMetrics}
           settingsPanel={
             <section id="settings" className="module-body module-settings-panel">
@@ -667,7 +801,8 @@ export default function Home() {
               </div>
             </section>
           }
-        />
+          />
+        </div>
       </section>
       {savedSignal ? <div className="toast">{savedSignal}</div> : null}
     </main>

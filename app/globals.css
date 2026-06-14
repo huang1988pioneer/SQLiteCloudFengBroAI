@@ -51,11 +51,286 @@ a {
   min-height: 100vh;
 }
 
+.console-shell {
+  display: grid;
+  grid-template-columns: 236px minmax(0, 1fr);
+  background:
+    radial-gradient(circle at 72% 16%, rgba(218, 220, 209, 0.58), transparent 24rem),
+    linear-gradient(115deg, #f6eddf 0%, #faf7ef 48%, #ebece3 100%);
+}
+
 .workspace {
   min-width: 0;
   max-width: 1680px;
   margin: 0 auto;
   padding: 28px clamp(18px, 4vw, 56px) 48px;
+}
+
+.console-workspace {
+  width: 100%;
+  max-width: 900px;
+  padding: 14px 22px 56px;
+}
+
+.console-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  padding: 14px 10px 14px 8px;
+}
+
+.console-sidebar-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  border: 1px solid rgba(214, 201, 181, 0.72);
+  border-radius: 22px;
+  background: rgba(255, 252, 245, 0.78);
+  box-shadow: 0 22px 55px rgba(86, 66, 38, 0.1);
+  padding: 10px;
+}
+
+.console-brand {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  border: 1px solid rgba(214, 201, 181, 0.82);
+  border-radius: 18px;
+  background: rgba(255, 253, 248, 0.92);
+  padding: 10px;
+}
+
+.console-brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  background: #c88b25;
+  color: #1f1609;
+}
+
+.console-brand span,
+.console-top-surface span,
+.tool-kicker {
+  color: #8b7a62;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.28em;
+}
+
+.console-brand strong {
+  display: block;
+  overflow: hidden;
+  color: #21170c;
+  font-size: 13px;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.console-design-mode,
+.console-sidebar-note {
+  border: 1px solid rgba(214, 201, 181, 0.74);
+  border-radius: 16px;
+  background: rgba(255, 253, 248, 0.68);
+  color: #554a3d;
+  padding: 10px 12px;
+}
+
+.console-design-mode span {
+  display: block;
+  color: #8b7a62;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.24em;
+}
+
+.console-design-mode strong,
+.console-sidebar-note strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 12px;
+}
+
+.console-menu {
+  display: grid;
+  gap: 5px;
+  min-height: 0;
+  overflow: auto;
+  padding: 2px 0 6px;
+}
+
+.console-nav-item,
+.console-child-item {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  min-height: 38px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #4e4437;
+  cursor: pointer;
+  padding: 4px 8px 4px 4px;
+  text-align: left;
+}
+
+.console-nav-item span,
+.console-child-item span {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(214, 201, 181, 0.82);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.9);
+  color: #20170d;
+}
+
+.console-nav-item b,
+.console-child-item b {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.console-nav-item small {
+  grid-column: 2;
+  color: rgba(255, 250, 240, 0.82);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.console-nav-item.active,
+.console-child-item.active {
+  background: #b77a19;
+  color: #fffaf0;
+}
+
+.console-nav-item.active span,
+.console-child-item.active span {
+  border-color: rgba(255, 255, 255, 0.42);
+  background: rgba(255, 255, 255, 0.15);
+  color: #fffaf0;
+}
+
+.console-nav-children {
+  display: grid;
+  gap: 5px;
+  margin-top: 6px;
+  padding-left: 16px;
+}
+
+.console-child-item {
+  min-height: 34px;
+  border-radius: 14px;
+}
+
+.console-child-item span {
+  width: 26px;
+  height: 26px;
+}
+
+.console-sidebar-note {
+  margin-top: auto;
+}
+
+.console-sidebar-note span {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.console-top-surface {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  min-height: 58px;
+  border: 1px solid rgba(214, 201, 181, 0.78);
+  border-radius: 20px;
+  background: rgba(255, 253, 248, 0.78);
+  box-shadow: 0 12px 34px rgba(86, 66, 38, 0.06);
+  margin-bottom: 12px;
+  padding: 10px 16px;
+}
+
+.console-top-surface strong {
+  display: block;
+  margin-top: 3px;
+  font-size: 16px;
+}
+
+.console-surface-pills {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.console-surface-pills span {
+  display: grid;
+  min-width: 72px;
+  border: 1px solid rgba(214, 201, 181, 0.82);
+  border-radius: 999px;
+  background: rgba(255, 253, 248, 0.9);
+  color: #2b2116;
+  font-size: 11px;
+  letter-spacing: 0;
+  padding: 7px 11px;
+  text-align: center;
+}
+
+.console-surface-pills b {
+  color: #9b8b75;
+  font-size: 8px;
+  letter-spacing: 0.18em;
+}
+
+.console-shell .topbar {
+  border: 1px solid rgba(214, 201, 181, 0.78);
+  border-radius: 26px 26px 0 0;
+  background: rgba(255, 253, 248, 0.88);
+  box-shadow: 0 20px 46px rgba(86, 66, 38, 0.08);
+  margin-bottom: 0;
+  padding: 24px 28px 20px;
+}
+
+.console-shell .topbar h1 {
+  font-size: 33px;
+}
+
+.console-shell .metrics,
+.console-shell .home-alert {
+  border-left: 1px solid rgba(214, 201, 181, 0.78);
+  border-right: 1px solid rgba(214, 201, 181, 0.78);
+  box-shadow: none;
+  margin-bottom: 0;
+}
+
+.console-shell .metrics {
+  display: none;
+  background: rgba(255, 253, 248, 0.8);
+  padding: 0 28px 18px;
+}
+
+.console-shell .metric {
+  border-color: rgba(214, 201, 181, 0.66);
+  box-shadow: none;
+}
+
+.console-shell .module-panel {
+  border-radius: 0 0 26px 26px;
+  box-shadow: 0 20px 60px rgba(86, 66, 38, 0.11);
 }
 
 .topbar {
@@ -471,6 +746,95 @@ h2 {
 .tool-section-fengbro-finance {
   border-color: #bbf7d0;
   background: linear-gradient(135deg, rgba(241, 253, 247, 0.98), rgba(230, 250, 239, 0.84));
+}
+
+.console-shell .tool-menu-body {
+  background: rgba(255, 253, 248, 0.78);
+}
+
+.console-shell .tool-menu-summary {
+  border-bottom: 1px solid rgba(222, 210, 192, 0.62);
+  background: rgba(255, 253, 248, 0.86);
+}
+
+.console-shell .tool-tabs {
+  order: 1;
+  grid-template-columns: repeat(4, max-content);
+  border-bottom: 0;
+  background: rgba(255, 253, 248, 0.86);
+  padding: 12px 18px 16px;
+}
+
+.console-shell .tool-tabs button {
+  min-height: 31px;
+  min-width: auto;
+  font-size: 12px;
+  font-weight: 750;
+  padding: 0 13px;
+}
+
+.console-shell .tool-section {
+  order: 2;
+  gap: 16px;
+  margin: 18px;
+  border-radius: 20px;
+  box-shadow: none;
+  padding: 18px;
+}
+
+.console-shell .tool-section-heading {
+  min-height: 58px;
+}
+
+.console-shell .tool-section-heading h3 {
+  margin-top: 4px;
+  font-size: 22px;
+}
+
+.console-shell .tool-section-heading p {
+  font-size: 13px;
+}
+
+.console-shell .tool-search-row,
+.console-shell .tube-manager,
+.console-shell .finance-margin-control {
+  border-radius: 16px;
+  box-shadow: none;
+}
+
+.console-shell .video-grid {
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 10px;
+}
+
+.console-shell .video-card {
+  border-radius: 12px;
+  background: #fffdf8;
+  overflow: hidden;
+}
+
+.console-shell .video-card img {
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.console-shell .finance-index-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.console-shell .finance-index-grid a,
+.console-shell .phone-card,
+.console-shell .price-result-card,
+.console-shell .channel-card {
+  border-color: rgba(214, 201, 181, 0.8);
+  border-radius: 16px;
+  background: rgba(255, 253, 248, 0.9);
+  box-shadow: 0 10px 24px rgba(86, 66, 38, 0.06);
+}
+
+.console-shell .code-stats-panel {
+  order: 3;
+  background: rgba(255, 249, 236, 0.9);
 }
 
 .tool-section-fengbro-tube .button.primary {
@@ -1267,6 +1631,43 @@ code {
 }
 
 @media (max-width: 1120px) {
+  .console-shell {
+    grid-template-columns: 86px minmax(0, 1fr);
+  }
+
+  .console-brand,
+  .console-design-mode,
+  .console-sidebar-note,
+  .console-nav-item b,
+  .console-nav-item small,
+  .console-child-item b {
+    display: none;
+  }
+
+  .console-sidebar {
+    padding-right: 6px;
+  }
+
+  .console-sidebar-inner {
+    align-items: center;
+  }
+
+  .console-nav-item,
+  .console-child-item {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    padding: 4px;
+  }
+
+  .console-nav-children {
+    padding-left: 0;
+  }
+
+  .console-workspace {
+    max-width: 900px;
+    padding-inline: 16px;
+  }
+
   .module-summary {
     grid-template-columns: 1fr;
   }
@@ -1279,6 +1680,52 @@ code {
 }
 
 @media (max-width: 760px) {
+  .console-shell {
+    display: block;
+  }
+
+  .console-sidebar {
+    position: static;
+    height: auto;
+    padding: 10px;
+  }
+
+  .console-sidebar-inner {
+    height: auto;
+    border-radius: 18px;
+  }
+
+  .console-menu {
+    grid-auto-flow: column;
+    grid-auto-columns: max-content;
+    overflow-x: auto;
+    overflow-y: hidden;
+    width: 100%;
+  }
+
+  .console-nav-group,
+  .console-nav-children {
+    display: contents;
+  }
+
+  .console-top-surface,
+  .console-shell .topbar {
+    grid-template-columns: 1fr;
+    border-radius: 18px;
+  }
+
+  .console-shell .topbar {
+    margin-bottom: 12px;
+  }
+
+  .console-shell .metrics {
+    padding: 0;
+  }
+
+  .console-shell .module-panel {
+    border-radius: 18px;
+  }
+
   .workspace {
     padding: 18px;
   }

@@ -424,6 +424,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
         <section className="tool-section tool-section-price-compare">
           <div className="tool-section-heading">
             <div>
+              <span className="tool-kicker">FENGBRO PRICE</span>
               <h3>鋒兄比價</h3>
               <p>貼上 momo / PChome 商品網址，可切換 BigGo API 或本地佔位模式。</p>
             </div>
@@ -471,6 +472,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
         <section className="tool-section tool-section-landtop">
           <div className="tool-section-heading">
             <div>
+              <span className="tool-kicker">LANDTOP CHART</span>
               <h3>手機比價</h3>
               <p>整合地標網通與傑昇通信，可搜尋 iPhone、Samsung A17 等機型。</p>
             </div>
@@ -526,6 +528,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
         <section className="tool-section tool-section-fengbro-tube">
           <div className="tool-section-heading">
             <div>
+              <span className="tool-kicker">FENGBRO TUBE</span>
               <h3>鋒兄Tube</h3>
               <p>讀取預設與自訂 YouTube 頻道，整理三天內新影片與倒台指數更新。</p>
             </div>
@@ -614,6 +617,7 @@ export function FengBroToolsPanel({ financeMarginRate = null, onFinanceMarginRat
         <section className="tool-section tool-section-fengbro-finance">
           <div className="tool-section-heading">
             <div>
+              <span className="tool-kicker">FENGBRO FINANCE</span>
               <h3>鋒兄金融</h3>
               <p>CNBC / Yahoo Finance / Multpl 報價，保留 Appwrite 版警戒門檻與 Shiller PE 追蹤。</p>
             </div>

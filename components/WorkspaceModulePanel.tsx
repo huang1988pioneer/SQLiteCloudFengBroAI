@@ -35,6 +35,7 @@ type Props = {
   subscriptionPanel?: ReactNode;
   subscriptionMetrics?: WorkspaceMetric[];
   settingsPanel?: ReactNode;
+  initialKey?: string;
   onMetricsChange?: (metrics: WorkspaceMetric[]) => void;
 };
 
@@ -61,10 +62,11 @@ export function WorkspaceModulePanel({
   subscriptionPanel,
   subscriptionMetrics = [],
   settingsPanel,
+  initialKey,
   onMetricsChange,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
-  const [activeKey, setActiveKey] = useState(subscriptionPanel ? "subscription" : workspaceModules[0].key);
+  const [activeKey, setActiveKey] = useState(initialKey || (subscriptionPanel ? "subscription" : workspaceModules[0].key));
   const subscriptionActive = activeKey === "subscription";
   const settingsActive = activeKey === "settings";
   const toolsActive = activeKey === "tools";
