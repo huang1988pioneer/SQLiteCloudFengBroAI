@@ -104,14 +104,14 @@ function Field({
 }
 
 const primaryNavItems = [
-  { label: "鋒兄首頁", icon: <HomeIcon size={16} /> },
-  { label: "鋒兄儀表", icon: <BarChart3 size={16} /> },
-  { label: "鋒兄訂閱", icon: <CreditCard size={16} /> },
-  { label: "鋒兄食品（+ 商品庫存）", icon: <Package size={16} /> },
-  { label: "鋒兄筆記", icon: <FileText size={16} /> },
-  { label: "鋒兄常用", icon: <Star size={16} /> },
-  { label: "鋒兄銀行（+ 電子票證）", icon: <Landmark size={16} /> },
-  { label: "鋒兄例行", icon: <RefreshCw size={16} /> },
+  { key: "home", label: "鋒兄首頁", icon: <HomeIcon size={16} /> },
+  { key: "dashboard", label: "鋒兄儀表", icon: <BarChart3 size={16} /> },
+  { key: "subscription", label: "鋒兄訂閱", icon: <CreditCard size={16} /> },
+  { key: "food", label: "鋒兄食品（+ 商品庫存）", icon: <Package size={16} /> },
+  { key: "article", label: "鋒兄筆記", icon: <FileText size={16} /> },
+  { key: "common", label: "鋒兄常用", icon: <Star size={16} /> },
+  { key: "bank", label: "鋒兄銀行（+ 電子票證）", icon: <Landmark size={16} /> },
+  { key: "routine", label: "鋒兄例行", icon: <RefreshCw size={16} /> },
 ];
 
 const toolNavItems = [
@@ -134,7 +134,27 @@ function scrollToWorkspace() {
   document.getElementById("workspace-modules")?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-function ConsoleSidebar() {
+function getSurfaceLabel(activeKey: string) {
+  const labels: Record<string, string> = {
+    subscription: "鋒兄訂閱",
+    food: "鋒兄食品",
+    article: "鋒兄筆記",
+    common: "鋒兄常用",
+    bank: "鋒兄銀行",
+    routine: "鋒兄例行",
+    tools: "鋒兄比價",
+    settings: "鋒兄設定",
+  };
+  return labels[activeKey] || "鋒兄比價";
+}
+
+function ConsoleSidebar({
+  activeKey,
+  onSelect,
+}: {
+  activeKey: string;
+  onSelect: (key: string) => void;
+}) {
   return (
     <aside className="console-sidebar" aria-label="鋒兄 Appwrite Console 導覽">
       <div className="console-sidebar-inner">
@@ -154,14 +174,19 @@ function ConsoleSidebar() {
 
         <nav className="console-menu">
           {primaryNavItems.map((item) => (
-            <button className="console-nav-item" type="button" key={item.label} onClick={scrollToWorkspace}>
+            <button
+              className={`console-nav-item${activeKey === item.key ? " active" : ""}`}
+              type="button"
+              key={item.label}
+              onClick={() => onSelect(item.key)}
+            >
               <span>{item.icon}</span>
               <b>{item.label}</b>
             </button>
           ))}
 
           <div className="console-nav-group">
-            <button className="console-nav-item active" type="button" onClick={scrollToWorkspace}>
+            <button className={`console-nav-item${activeKey === "tools" ? " active" : ""}`} type="button" onClick={() => onSelect("tools")}>
               <span>
                 <Wrench size={16} />
               </span>
@@ -171,10 +196,10 @@ function ConsoleSidebar() {
             <div className="console-nav-children">
               {toolNavItems.map((item) => (
                 <button
-                  className={`console-child-item${item.active ? " active" : ""}`}
+                  className={`console-child-item${activeKey === "tools" && item.active ? " active" : ""}`}
                   type="button"
                   key={item.label}
-                  onClick={scrollToWorkspace}
+                  onClick={() => onSelect("tools")}
                 >
                   <span>{item.icon}</span>
                   <b>{item.label}</b>
@@ -183,7 +208,7 @@ function ConsoleSidebar() {
             </div>
           </div>
 
-          <button className="console-nav-item" type="button" onClick={scrollToWorkspace}>
+          <button className={`console-nav-item${activeKey === "settings" ? " active" : ""}`} type="button" onClick={() => onSelect("settings")}>
             <span>
               <Settings size={16} />
             </span>
@@ -200,12 +225,12 @@ function ConsoleSidebar() {
   );
 }
 
-function ConsoleTopSurface() {
+function ConsoleTopSurface({ activeKey }: { activeKey: string }) {
   return (
     <header className="console-top-surface">
       <div>
         <span>ACTIVE SURFACE</span>
-        <strong>鋒兄比價</strong>
+        <strong>{getSurfaceLabel(activeKey)}</strong>
       </div>
       <div className="console-surface-pills" aria-label="今日與模組資訊">
         <span>
@@ -241,6 +266,7 @@ export default function Home() {
   const [syncingCloud, setSyncingCloud] = useState(false);
   const [financeMarginRate, setFinanceMarginRate] = useState<number | null>(null);
   const [dashboardMetrics, setDashboardMetrics] = useState<WorkspaceMetric[]>([]);
+  const [activeWorkspaceKey, setActiveWorkspaceKey] = useState("tools");
 
   useEffect(() => {
     const savedSettings = localStorage.getItem(settingsKey);
@@ -297,6 +323,15 @@ export default function Home() {
   const flash = (message: string) => {
     setSavedSignal(message);
     window.setTimeout(() => setSavedSignal(""), 1800);
+  };
+
+  const selectWorkspaceKey = (key: string) => {
+    if (key === "home" || key === "dashboard") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    setActiveWorkspaceKey(key);
+    window.setTimeout(scrollToWorkspace, 0);
   };
 
   const saveSettings = ({ silent = false } = {}) => {
@@ -385,6 +420,20 @@ export default function Home() {
       if (!silent) flash(`已重新載入 ${nextSubscriptions.length} 筆 SQLiteCloud 資料`);
     } catch (error) {
       if (!silent) flash(error instanceof Error ? error.message : "從 SQLiteCloud 載入失敗");
+    } finally {
+      setSyncingCloud(false);
+    }
+  };
+
+  const testCloudConnection = async () => {
+    setSyncingCloud(true);
+    try {
+      saveSettings({ silent: true });
+      const nextSubscriptions = await fetchCloudSubscriptions();
+      setSubscriptions(nextSubscriptions);
+      flash(`連線成功，已讀取 ${nextSubscriptions.length} 筆訂閱資料`);
+    } catch (error) {
+      flash(error instanceof Error ? error.message : "SQLiteCloud 連線測試失敗");
     } finally {
       setSyncingCloud(false);
     }
@@ -568,9 +617,9 @@ export default function Home() {
 
   return (
     <main className="app-shell console-shell">
-      <ConsoleSidebar />
+      <ConsoleSidebar activeKey={activeWorkspaceKey} onSelect={selectWorkspaceKey} />
       <section className="workspace console-workspace">
-        <ConsoleTopSurface />
+        <ConsoleTopSurface activeKey={activeWorkspaceKey} />
         <header className="topbar">
           <div>
             <h1>鋒兄工具</h1>
@@ -614,6 +663,8 @@ export default function Home() {
           onFinanceMarginRateChange={updateFinanceMarginRate}
           subscriptionMetrics={subscriptionMetrics}
           initialKey="tools"
+          activeKey={activeWorkspaceKey}
+          onActiveKeyChange={setActiveWorkspaceKey}
           onMetricsChange={setDashboardMetrics}
           settingsPanel={
             <section id="settings" className="module-body module-settings-panel">
@@ -628,9 +679,9 @@ export default function Home() {
                 <Field label="到期提醒天數" type="number" value={settings.notificationDays} onChange={(value) => setSettings({ ...settings, notificationDays: Number(value || 0) })} />
                 <div className="settings-actions">
                   <button className="button primary" onClick={() => saveSettings()}><Check size={16} />儲存設定</button>
-                  <button className="button ghost" onClick={() => flash("連線測試入口已建立，可接 SQLiteCloud route")}>
+                  <button className="button ghost" onClick={() => void testCloudConnection()} disabled={syncingCloud}>
                     <RefreshCw size={16} />
-                    測試
+                    {syncingCloud ? "測試中..." : "測試"}
                   </button>
                 </div>
                 <button className="button setup-button" onClick={createAllTables} disabled={creatingTable}>

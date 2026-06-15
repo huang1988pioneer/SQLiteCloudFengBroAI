@@ -36,6 +36,8 @@ type Props = {
   subscriptionMetrics?: WorkspaceMetric[];
   settingsPanel?: ReactNode;
   initialKey?: string;
+  activeKey?: string;
+  onActiveKeyChange?: (key: string) => void;
   onMetricsChange?: (metrics: WorkspaceMetric[]) => void;
 };
 
@@ -63,10 +65,17 @@ export function WorkspaceModulePanel({
   subscriptionMetrics = [],
   settingsPanel,
   initialKey,
+  activeKey: controlledActiveKey,
+  onActiveKeyChange,
   onMetricsChange,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
-  const [activeKey, setActiveKey] = useState(initialKey || (subscriptionPanel ? "subscription" : workspaceModules[0].key));
+  const [internalActiveKey, setInternalActiveKey] = useState(initialKey || (subscriptionPanel ? "subscription" : workspaceModules[0].key));
+  const activeKey = controlledActiveKey || internalActiveKey;
+  const setPanelActiveKey = (key: string) => {
+    if (!controlledActiveKey) setInternalActiveKey(key);
+    onActiveKeyChange?.(key);
+  };
   const subscriptionActive = activeKey === "subscription";
   const settingsActive = activeKey === "settings";
   const toolsActive = activeKey === "tools";
@@ -345,7 +354,7 @@ export function WorkspaceModulePanel({
   };
 
   const switchModule = (module: WorkspaceModule) => {
-    setActiveKey(module.key);
+    setPanelActiveKey(module.key);
     setEditingId(null);
     setCsvErrors([]);
     setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
@@ -353,21 +362,21 @@ export function WorkspaceModulePanel({
   };
 
   const switchTools = () => {
-    setActiveKey("tools");
+    setPanelActiveKey("tools");
     setEditingId(null);
     setCsvErrors([]);
     setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
   };
 
   const switchSubscription = () => {
-    setActiveKey("subscription");
+    setPanelActiveKey("subscription");
     setEditingId(null);
     setCsvErrors([]);
     setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
   };
 
   const switchSettings = () => {
-    setActiveKey("settings");
+    setPanelActiveKey("settings");
     setEditingId(null);
     setCsvErrors([]);
     setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
