@@ -383,7 +383,7 @@ export function WorkspaceModulePanel({
   };
 
   return (
-    <section id="workspace-modules" className="panel module-panel">
+    <section id="workspace-modules" className="panel module-panel" tabIndex={-1} aria-label="工作區">
       <div className="panel-heading module-heading">
         <div>
           <h2>鋒兄工作台</h2>
@@ -391,24 +391,25 @@ export function WorkspaceModulePanel({
         </div>
       </div>
 
-      <div className="module-tabs">
-        <button className={subscriptionActive ? "active" : ""} onClick={switchSubscription}>
+      <div className="module-tabs" role="group" aria-label="切換工作區模組">
+        <button aria-pressed={subscriptionActive} className={subscriptionActive ? "active" : ""} onClick={switchSubscription}>
           訂閱
         </button>
         {workspaceModules.map((module) => (
           <button
             key={module.key}
+            aria-pressed={dataModuleActive && module.key === activeModule.key}
             className={dataModuleActive && module.key === activeModule.key ? "active" : ""}
             onClick={() => switchModule(module)}
           >
             {module.shortTitle}
           </button>
         ))}
-        <button className={toolsActive ? "active" : ""} onClick={switchTools}>
+        <button aria-pressed={toolsActive} className={toolsActive ? "active" : ""} onClick={switchTools}>
           工具
         </button>
         {settingsPanel ? (
-          <button className={settingsActive ? "active" : ""} onClick={switchSettings}>
+          <button aria-pressed={settingsActive} className={settingsActive ? "active" : ""} onClick={switchSettings}>
             鋒兄設定
           </button>
         ) : null}

@@ -23,6 +23,8 @@ input, textarea { caret-color: var(--teal); }
 input::placeholder, textarea::placeholder { color: #707a72; opacity: 1; }
 :focus-visible { outline: 3px solid #a56b19; outline-offset: 3px; }
 a { text-underline-offset: 4px; }
+.skip-link { position: fixed; top: 12px; left: 12px; z-index: 100; padding: 10px 16px; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: 8px; transform: translateY(calc(-100% - 20px)); }
+.skip-link:focus { transform: translateY(0); }
 button { transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease; }
 button:disabled { cursor: not-allowed; }
 .console-shell { grid-template-columns: 244px minmax(0, 1fr); }

@@ -119,7 +119,8 @@ function formatTodayLabel() {
 }
 
 function scrollToWorkspace() {
-  document.getElementById("workspace-modules")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById("workspace-modules")?.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "start" });
 }
 
 function getSurfaceLabel(activeKey: string) {
@@ -587,6 +588,7 @@ export default function Home() {
 
   return (
     <main className="app-shell console-shell">
+      <a className="skip-link" href="#workspace-modules">跳至工作區</a>
       <ConsoleSidebar activeKey={activeWorkspaceKey} onSelect={selectWorkspaceKey} />
       <section className="workspace console-workspace">
         <ConsoleTopSurface activeKey={activeWorkspaceKey} />
