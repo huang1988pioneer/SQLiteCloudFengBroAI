@@ -11,15 +11,12 @@ import {
   Download,
   ExternalLink,
   FileText,
-  Home as HomeIcon,
   Landmark,
   Pencil,
-  Play,
   Package,
   RefreshCw,
   Search,
   Settings,
-  Smartphone,
   Star,
   Trash2,
   Upload,
@@ -104,21 +101,12 @@ function Field({
 }
 
 const primaryNavItems = [
-  { key: "home", label: "鋒兄首頁", icon: <HomeIcon size={16} /> },
-  { key: "dashboard", label: "鋒兄儀表", icon: <BarChart3 size={16} /> },
   { key: "subscription", label: "鋒兄訂閱", icon: <CreditCard size={16} /> },
   { key: "food", label: "鋒兄食品（+ 商品庫存）", icon: <Package size={16} /> },
   { key: "article", label: "鋒兄筆記", icon: <FileText size={16} /> },
   { key: "common", label: "鋒兄常用", icon: <Star size={16} /> },
   { key: "bank", label: "鋒兄銀行（+ 電子票證）", icon: <Landmark size={16} /> },
   { key: "routine", label: "鋒兄例行", icon: <RefreshCw size={16} /> },
-];
-
-const toolNavItems = [
-  { label: "鋒兄比價", icon: <Search size={15} />, active: true },
-  { label: "手機比價", icon: <Smartphone size={15} /> },
-  { label: "鋒兄Tube", icon: <Play size={15} /> },
-  { label: "鋒兄金融", icon: <BarChart3 size={15} /> },
 ];
 
 function formatTodayLabel() {
@@ -142,7 +130,7 @@ function getSurfaceLabel(activeKey: string) {
     common: "鋒兄常用",
     bank: "鋒兄銀行",
     routine: "鋒兄例行",
-    tools: "鋒兄比價",
+    tools: "鋒兄工具",
     settings: "鋒兄設定",
   };
   return labels[activeKey] || "鋒兄比價";
@@ -156,28 +144,25 @@ function ConsoleSidebar({
   onSelect: (key: string) => void;
 }) {
   return (
-    <aside className="console-sidebar" aria-label="鋒兄 Appwrite Console 導覽">
+    <aside className="console-sidebar" aria-label="鋒兄 AI 工作台導覽">
       <div className="console-sidebar-inner">
         <div className="console-brand">
           <div className="console-brand-mark">
             <Command size={17} />
           </div>
           <div>
-            <span>FENGBRO</span>
-            <strong>AI Appwrite Console</strong>
+            <strong>鋒兄 AI</strong>
+            <span>生活管理工作台</span>
           </div>
         </div>
-        <div className="console-design-mode">
-          <span>DESIGN MODE</span>
-          <strong>Impeccable 2026</strong>
-        </div>
-
-        <nav className="console-menu">
+        <nav className="console-menu" aria-label="主要功能">
           {primaryNavItems.map((item) => (
             <button
               className={`console-nav-item${activeKey === item.key ? " active" : ""}`}
               type="button"
               key={item.label}
+              aria-label={item.label}
+              aria-current={activeKey === item.key ? "page" : undefined}
               onClick={() => onSelect(item.key)}
             >
               <span>{item.icon}</span>
@@ -186,29 +171,16 @@ function ConsoleSidebar({
           ))}
 
           <div className="console-nav-group">
-            <button className={`console-nav-item${activeKey === "tools" ? " active" : ""}`} type="button" onClick={() => onSelect("tools")}>
+            <button className={`console-nav-item${activeKey === "tools" ? " active" : ""}`} aria-label="鋒兄工具" aria-current={activeKey === "tools" ? "page" : undefined} type="button" onClick={() => onSelect("tools")}>
               <span>
                 <Wrench size={16} />
               </span>
               <b>鋒兄工具</b>
               <small>4 個工具</small>
             </button>
-            <div className="console-nav-children">
-              {toolNavItems.map((item) => (
-                <button
-                  className={`console-child-item${activeKey === "tools" && item.active ? " active" : ""}`}
-                  type="button"
-                  key={item.label}
-                  onClick={() => onSelect("tools")}
-                >
-                  <span>{item.icon}</span>
-                  <b>{item.label}</b>
-                </button>
-              ))}
-            </div>
           </div>
 
-          <button className={`console-nav-item${activeKey === "settings" ? " active" : ""}`} type="button" onClick={() => onSelect("settings")}>
+          <button className={`console-nav-item${activeKey === "settings" ? " active" : ""}`} aria-label="鋒兄設定" aria-current={activeKey === "settings" ? "page" : undefined} type="button" onClick={() => onSelect("settings")}>
             <span>
               <Settings size={16} />
             </span>
@@ -217,8 +189,9 @@ function ConsoleSidebar({
         </nav>
 
         <div className="console-sidebar-note">
-          <strong>Unified Household Workspace</strong>
-          <span>SQLiteCloud、CSV、工具與金融提示集中管理。</span>
+          <Database size={18} />
+          <strong>SQLiteCloud 版</strong>
+          <span>把日常大小事，整理在一起。</span>
         </div>
       </div>
     </aside>
@@ -229,17 +202,14 @@ function ConsoleTopSurface({ activeKey }: { activeKey: string }) {
   return (
     <header className="console-top-surface">
       <div>
-        <span>ACTIVE SURFACE</span>
-        <strong>{getSurfaceLabel(activeKey)}</strong>
+        <strong>我的工作台 <span className="breadcrumb-divider">/</span> {getSurfaceLabel(activeKey)}</strong>
       </div>
       <div className="console-surface-pills" aria-label="今日與模組資訊">
         <span>
-          <b>TODAY</b>
           {formatTodayLabel()}
         </span>
         <span>
-          <b>MODULES</b>
-          16 個模組
+          <Database size={14} /> SQLiteCloud
         </span>
       </div>
     </header>
@@ -622,19 +592,19 @@ export default function Home() {
         <ConsoleTopSurface activeKey={activeWorkspaceKey} />
         <header className="topbar">
           <div>
-            <h1>鋒兄工具</h1>
-            <p>工具模組集中入口與手機比價工作台；資料模組仍在同一個 SQLiteCloud 工作台內。</p>
+            <h1>{getSurfaceLabel(activeWorkspaceKey)}</h1>
+            <p>{activeWorkspaceKey === "tools" ? "比價、影音與金融資訊，日常需要的工具都在這裡。" : activeWorkspaceKey === "settings" ? "管理連線與提醒，讓工作台配合你的日常。" : "整理每一筆生活紀錄，讓接下來的安排更清楚。"}</p>
           </div>
         </header>
 
-      <section className="metrics" aria-label="訂閱摘要">
+      {activeWorkspaceKey !== "tools" && activeWorkspaceKey !== "settings" && <section className="metrics" aria-label="資料摘要">
           {visibleMetrics.map((metric) => (
             <div className="metric" key={metric.label}>
               <span>{metric.label}</span>
               <strong>{metric.value}</strong>
             </div>
           ))}
-      </section>
+      </section>}
 
       {shouldWarnFinanceMargin ? (
         <section className="home-alert finance-alert" role="alert" aria-live="polite">
@@ -654,7 +624,7 @@ export default function Home() {
         </section>
       ) : null}
 
-        <div id="workspace-modules">
+        <div>
           <WorkspaceModulePanel
           getCloudHeaders={getCloudHeaders}
           flash={flash}
@@ -705,7 +675,7 @@ export default function Home() {
                 <div className="panel-tools">
                   <div className="search">
                     <Search size={17} />
-                    <input value={query} placeholder="搜尋服務、帳號、備註" onChange={(event) => setQuery(event.target.value)} />
+                    <input aria-label="搜尋訂閱" value={query} placeholder="搜尋服務、帳號、備註" onChange={(event) => setQuery(event.target.value)} />
                   </div>
                   <input
                     ref={importInputRef}
@@ -733,11 +703,12 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="csv-hint">
+              <details className="csv-hint">
+                <summary>CSV 匯入格式與說明</summary>
                 <strong>Appwrite CSV 相容欄位</strong>
                 <code>{appwriteCsvHeaders.join(",")}</code>
                 <span>CSV 匯入會直接寫入 SQLiteCloud；可用鋒兄設定覆蓋，或在 Vercel 設定 SQLITECLOUD_CONNECTION_STRING。</span>
-              </div>
+              </details>
 
               {importProgress.phase !== "idle" ? (
                 <div className={`import-progress import-progress-${importProgress.phase}`} role="status" aria-live="polite">
@@ -807,6 +778,7 @@ export default function Home() {
                     </tr>
                   </thead>
                   <tbody>
+                    {filteredSubscriptions.length === 0 && <tr><td colSpan={7} className="empty-cell">{query ? "找不到符合的訂閱，試試其他關鍵字。" : "尚無訂閱紀錄。新增第一筆訂閱，或匯入 CSV 開始管理。"}</td></tr>}
                     {filteredSubscriptions.map((subscription) => {
                       const days = daysUntil(subscription.nextdate);
                       const status = !subscription.nextdate
@@ -855,7 +827,7 @@ export default function Home() {
           />
         </div>
       </section>
-      {savedSignal ? <div className="toast">{savedSignal}</div> : null}
+      {savedSignal ? <div className="toast" role="status">{savedSignal}</div> : null}
     </main>
   );
 }

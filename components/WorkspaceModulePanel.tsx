@@ -462,10 +462,11 @@ export function WorkspaceModulePanel({
           </div>
         </div>
 
-        <div className="csv-hint module-csv-hint">
+        <details className="csv-hint module-csv-hint">
+          <summary>CSV 匯入格式</summary>
           <strong>{activeModule.csvName} 欄位</strong>
           <code>{activeModule.fields.map((field) => field.name).join(",")}</code>
-        </div>
+        </details>
 
         {importProgress.phase !== "idle" ? (
           <div className={`import-progress import-progress-${importProgress.phase}`} role="status" aria-live="polite">
