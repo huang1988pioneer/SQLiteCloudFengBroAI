@@ -2,15 +2,17 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { Download, Pencil, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Download, Pencil, Plus, RefreshCw, Search, SearchX, Trash2, Upload } from "lucide-react";
 import { ArticleCardView } from "@/components/ArticleCardView";
 import { BankCardView } from "@/components/BankCardView";
 import { CommonAccountCardView } from "@/components/CommonAccountCardView";
+import { FilterChips } from "@/components/FilterChips";
 import { FengBroToolsPanel } from "@/components/FengBroToolsPanel";
 import { FoodCardView } from "@/components/FoodCardView";
 import { RoutineCardView } from "@/components/RoutineCardView";
 import { downloadCsvFile } from "@/lib/download-file";
 import { parseWorkspaceCsv, stringifyWorkspaceCsv } from "@/lib/workspace-csv";
+import { getModuleFilters, matchesRecordQuery, todayInput } from "@/lib/workspace-filters";
 import { workspaceModules } from "@/lib/workspace-modules";
 import type { WorkspaceModule, WorkspaceRecord } from "@/types/workspace";
 
@@ -70,6 +72,7 @@ export function WorkspaceModulePanel({
   onMetricsChange,
 }: Props) {
   const importInputRef = useRef<HTMLInputElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const [internalActiveKey, setInternalActiveKey] = useState(initialKey || (subscriptionPanel ? "subscription" : workspaceModules[0].key));
   const activeKey = controlledActiveKey || internalActiveKey;
   const setPanelActiveKey = (key: string) => {
@@ -87,8 +90,20 @@ export function WorkspaceModulePanel({
   const [loading, setLoading] = useState(false);
   const [importProgress, setImportProgress] = useState<ImportProgress>({ phase: "idle", current: 0, total: 0, label: "" });
   const [csvErrors, setCsvErrors] = useState<string[]>([]);
+  const [recordQuery, setRecordQuery] = useState("");
+  const [recordFilter, setRecordFilter] = useState("all");
 
   const records = recordsByModule[activeModule.key] || [];
+  const moduleFilters = useMemo(() => getModuleFilters(activeModule.key), [activeModule.key]);
+  const filterItems = useMemo(
+    () => moduleFilters.map((filter) => ({ key: filter.key, label: filter.label, count: records.filter(filter.match).length })),
+    [moduleFilters, records],
+  );
+  const visibleRecords = useMemo(() => {
+    const filter = moduleFilters.find((item) => item.key === recordFilter) || moduleFilters[0];
+    return records.filter((record) => filter.match(record) && matchesRecordQuery(record, activeModule, recordQuery));
+  }, [activeModule, moduleFilters, recordFilter, recordQuery, records]);
+  const isNarrowed = recordFilter !== "all" || recordQuery.trim() !== "";
   const draft = draftByModule[activeModule.key] || emptyRecord(activeModule);
   const requiredField = activeModule.fields.find((field) => field.required);
   const importPercent = importProgress.total
@@ -188,8 +203,7 @@ export function WorkspaceModulePanel({
   const isFood = activeModule.key === "food";
   const isRoutine = activeModule.key === "routine";
 
-  const togglePin = async (record: WorkspaceRecord) => {
-    const isPinned = Number(record.pinned || 0) === 1;
+  const patchRecord = async (record: WorkspaceRecord, patch: Record<string, unknown>, successMessage: string, failureMessage: string) => {
     setLoading(true);
     try {
       const response = await fetch(`/api/workspace/${activeModule.key}/${record.id}`, {
@@ -198,17 +212,25 @@ export function WorkspaceModulePanel({
           "Content-Type": "application/json",
           ...getCloudHeaders(),
         },
-        body: JSON.stringify({ ...record, pinned: isPinned ? 0 : 1 }),
+        body: JSON.stringify({ ...record, ...patch }),
       });
       const result = await response.json();
-      if (!response.ok || result.error) throw new Error(result.error || "釘選失敗");
+      if (!response.ok || result.error) throw new Error(result.error || failureMessage);
       await fetchRecords(activeModule, true);
-      flash(isPinned ? "已取消釘選" : "已釘選筆記");
+      if (editingId === record.id) {
+        setDraftByModule((items) => ({ ...items, [activeModule.key]: { ...(items[activeModule.key] || record), ...patch } }));
+      }
+      flash(successMessage);
     } catch (error) {
-      flash(error instanceof Error ? error.message : "釘選失敗");
+      flash(error instanceof Error ? error.message : failureMessage);
     } finally {
       setLoading(false);
     }
+  };
+
+  const togglePin = async (record: WorkspaceRecord) => {
+    const isPinned = Number(record.pinned || 0) === 1;
+    await patchRecord(record, { pinned: isPinned ? 0 : 1 }, isPinned ? "已取消釘選" : "已釘選筆記", "釘選失敗");
   };
 
   const generateSummary = async (record: WorkspaceRecord) => {
@@ -223,25 +245,29 @@ export function WorkspaceModulePanel({
       .split(/(?<=[。！？.!?])\s*/)
       .filter((s) => s.trim().length > 4);
     const summary = sentences.slice(0, 3).join(" ").slice(0, 300) || content.slice(0, 300);
-    setLoading(true);
-    try {
-      const response = await fetch(`/api/workspace/${activeModule.key}/${record.id}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          ...getCloudHeaders(),
-        },
-        body: JSON.stringify({ ...record, ai_summary: summary }),
-      });
-      const result = await response.json();
-      if (!response.ok || result.error) throw new Error(result.error || "AI 摘要生成失敗");
-      await fetchRecords(activeModule, true);
-      flash("AI 摘要已生成並寫入");
-    } catch (error) {
-      flash(error instanceof Error ? error.message : "AI 摘要生成失敗");
-    } finally {
-      setLoading(false);
+    await patchRecord(record, { ai_summary: summary }, "AI 摘要已生成並寫入", "AI 摘要生成失敗");
+  };
+
+  const adjustFoodAmount = async (record: WorkspaceRecord, delta: number) => {
+    const current = Number(record.amount || 0);
+    const amount = Math.max(0, current + delta);
+    if (amount === current) return;
+    await patchRecord(record, { amount }, `「${primaryValue(record, activeModule)}」數量 ${current} → ${amount}`, "更新數量失敗");
+  };
+
+  const completeRoutineToday = async (record: WorkspaceRecord) => {
+    const today = todayInput();
+    if (String(record.lastdate1 || "") === today) {
+      flash("今天已經記錄過了");
+      return;
     }
+    /* Most recent date moves down one slot: ① → ②, ② → ③, today → ①. */
+    await patchRecord(
+      record,
+      { lastdate1: today, lastdate2: record.lastdate1 || "", lastdate3: record.lastdate2 || "" },
+      `「${primaryValue(record, activeModule)}」已記錄今天完成`,
+      "更新例行日期失敗",
+    );
   };
 
   const saveRecord = async () => {
@@ -275,6 +301,14 @@ export function WorkspaceModulePanel({
   const editRecord = (record: WorkspaceRecord) => {
     setEditingId(record.id);
     setDraftByModule((items) => ({ ...items, [activeModule.key]: { ...record } }));
+    window.setTimeout(() => {
+      const form = formRef.current;
+      if (!form) return;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      form.scrollTop = 0;
+      form.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "start" });
+      form.querySelector<HTMLInputElement | HTMLTextAreaElement>("input, textarea")?.focus({ preventScroll: true });
+    }, 0);
   };
 
   const deleteRecord = async (record: WorkspaceRecord) => {
@@ -356,6 +390,8 @@ export function WorkspaceModulePanel({
   const switchModule = (module: WorkspaceModule) => {
     setPanelActiveKey(module.key);
     setEditingId(null);
+    setRecordQuery("");
+    setRecordFilter("all");
     setCsvErrors([]);
     setImportProgress({ phase: "idle", current: 0, total: 0, label: "" });
     if (!recordsByModule[module.key]) void fetchRecords(module, true);
@@ -433,7 +469,7 @@ export function WorkspaceModulePanel({
             <span>{activeModule.description}</span>
           </div>
           <div className="module-stat">
-            <span>{records.length} 筆</span>
+            <span>{isNarrowed ? `${visibleRecords.length} / ${records.length} 筆` : `${records.length} 筆`}</span>
             <span>{totals.totalLabel}: {totals.total}</span>
           </div>
           <div className="module-tools">
@@ -488,7 +524,8 @@ export function WorkspaceModulePanel({
           </div>
         ) : null}
 
-        <div className="module-form">
+        <div className={`module-form${editingId ? " is-editing" : ""}`} ref={formRef}>
+          {editingId ? <p className="form-editing-note">正在編輯「{String(draft[requiredField?.name || "id"] || editingId)}」</p> : null}
           {activeModule.fields.map((field) => (
             <label key={field.name} className={`field ${field.multiline ? "field-wide" : ""}`}>
               <span>{field.label}</span>
@@ -519,9 +556,32 @@ export function WorkspaceModulePanel({
           </div>
         </div>
 
-        {isArticle ? (
+        <div className="record-toolbar">
+          <div className="search">
+            <Search size={17} />
+            <input
+              aria-label={`搜尋${activeModule.title}`}
+              value={recordQuery}
+              placeholder={`搜尋${activeModule.shortTitle}的任何欄位`}
+              onChange={(event) => setRecordQuery(event.target.value)}
+            />
+          </div>
+          {filterItems.length > 1 ? (
+            <FilterChips label={`篩選${activeModule.title}`} items={filterItems} active={recordFilter} onChange={setRecordFilter} />
+          ) : null}
+        </div>
+
+        {records.length > 0 && visibleRecords.length === 0 ? (
+          <div className="record-no-match" role="status">
+            <SearchX size={32} />
+            <p>沒有符合目前搜尋或篩選的{activeModule.shortTitle}。</p>
+            <button className="button ghost" type="button" onClick={() => { setRecordQuery(""); setRecordFilter("all"); }}>
+              清除搜尋與篩選
+            </button>
+          </div>
+        ) : isArticle ? (
           <ArticleCardView
-            records={records}
+            records={visibleRecords}
             loading={loading}
             onEdit={editRecord}
             onDelete={(record) => void deleteRecord(record)}
@@ -530,7 +590,7 @@ export function WorkspaceModulePanel({
           />
         ) : isCommon ? (
           <CommonAccountCardView
-            records={records}
+            records={visibleRecords}
             loading={loading}
             onEdit={editRecord}
             onDelete={(record) => void deleteRecord(record)}
@@ -538,24 +598,26 @@ export function WorkspaceModulePanel({
           />
         ) : isFood ? (
           <FoodCardView
-            records={records}
+            records={visibleRecords}
             loading={loading}
             onEdit={editRecord}
             onDelete={(record) => void deleteRecord(record)}
+            onAdjustAmount={(record, delta) => void adjustFoodAmount(record, delta)}
           />
         ) : isBank ? (
           <BankCardView
-            records={records}
+            records={visibleRecords}
             loading={loading}
             onEdit={editRecord}
             onDelete={(record) => void deleteRecord(record)}
           />
         ) : isRoutine ? (
           <RoutineCardView
-            records={records}
+            records={visibleRecords}
             loading={loading}
             onEdit={editRecord}
             onDelete={(record) => void deleteRecord(record)}
+            onCompleteToday={(record) => void completeRoutineToday(record)}
           />
         ) : (
         <div className="table-wrap module-table">
@@ -569,7 +631,7 @@ export function WorkspaceModulePanel({
               </tr>
             </thead>
             <tbody>
-              {records.map((record) => (
+              {visibleRecords.map((record) => (
                 <tr key={record.id}>
                   {activeModule.displayFields.map((fieldName) => (
                     <td key={fieldName}>{stringifyCell(record[fieldName])}</td>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { AlertTriangle, Calendar, DollarSign, ImageOff, Package, Pencil, ShoppingBag, Trash2 } from "lucide-react";
+import { AlertTriangle, Calendar, DollarSign, ImageOff, Minus, Package, Pencil, Plus, ShoppingBag, Trash2 } from "lucide-react";
 import type { WorkspaceRecord } from "@/types/workspace";
 
 type Props = {
@@ -9,6 +9,7 @@ type Props = {
   loading: boolean;
   onEdit: (record: WorkspaceRecord) => void;
   onDelete: (record: WorkspaceRecord) => void;
+  onAdjustAmount?: (record: WorkspaceRecord, delta: number) => void;
 };
 
 function daysUntilExpiry(dateValue: string) {
@@ -43,7 +44,7 @@ function formatPrice(price: number) {
   }).format(price);
 }
 
-export function FoodCardView({ records, loading, onEdit, onDelete }: Props) {
+export function FoodCardView({ records, loading, onEdit, onDelete, onAdjustAmount }: Props) {
   const [imgErrors, setImgErrors] = useState<Set<string>>(new Set());
 
   const sortedRecords = useMemo(() => {
@@ -116,7 +117,29 @@ export function FoodCardView({ records, loading, onEdit, onDelete }: Props) {
                     <span>到期 {todate}</span>
                   </div>
                 ) : null}
-                {amount ? (
+                {onAdjustAmount ? (
+                  <div className="food-meta-item food-amount-control">
+                    <Package size={13} />
+                    <span>數量</span>
+                    <button
+                      type="button"
+                      aria-label={`${name} 數量減 1`}
+                      onClick={() => onAdjustAmount(record, -1)}
+                      disabled={loading || amount <= 0}
+                    >
+                      <Minus size={13} />
+                    </button>
+                    <output aria-live="polite">{amount}</output>
+                    <button
+                      type="button"
+                      aria-label={`${name} 數量加 1`}
+                      onClick={() => onAdjustAmount(record, 1)}
+                      disabled={loading}
+                    >
+                      <Plus size={13} />
+                    </button>
+                  </div>
+                ) : amount ? (
                   <div className="food-meta-item">
                     <Package size={13} />
                     <span>數量 {amount}</span>

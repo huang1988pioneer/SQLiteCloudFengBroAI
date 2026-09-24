@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bell,
-  BarChart3,
+  CalendarPlus,
   Check,
   Command,
+  Copy,
   CreditCard,
   Database,
   Download,
@@ -27,8 +28,10 @@ import {
   parseAppwriteSubscriptionCsv,
   stringifyAppwriteSubscriptionCsv,
 } from "@/lib/appwrite-csv";
+import { FilterChips } from "@/components/FilterChips";
 import { WorkspaceModulePanel, type WorkspaceMetric } from "@/components/WorkspaceModulePanel";
 import { downloadCsvFile } from "@/lib/download-file";
+import { formatDateInput } from "@/lib/workspace-filters";
 import type { FengBroSettings, Subscription, SubscriptionDraft } from "@/types/subscription";
 
 const settingsKey = "fengbro.sqlitecloud.settings";
@@ -44,6 +47,10 @@ const emptyDraft: SubscriptionDraft = {
   note: "",
   continue: true,
 };
+
+const currencyOptions = ["TWD", "USD", "JPY", "HKD", "CNY", "EUR"];
+
+type SubscriptionFilter = "all" | "overdue" | "soon" | "month" | "undated" | "stopped";
 
 const defaultSettings: FengBroSettings = {
   connectionString: "",
@@ -64,6 +71,48 @@ function daysUntil(dateValue: string) {
   const date = new Date(dateValue);
   date.setHours(0, 0, 0, 0);
   return Math.round((date.getTime() - today.getTime()) / 86_400_000);
+}
+
+/** Same day next month, clamped to the month's last day (Jan 31 → Feb 28/29). */
+function addOneMonth(dateValue: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(dateValue);
+  const today = new Date();
+  const [year, month, day] = match
+    ? [Number(match[1]), Number(match[2]) - 1, Number(match[3])]
+    : [today.getFullYear(), today.getMonth(), today.getDate()];
+  const lastDayOfNextMonth = new Date(year, month + 2, 0).getDate();
+  return formatDateInput(new Date(year, month + 1, Math.min(day, lastDayOfNextMonth)));
+}
+
+function toSubscriptionDraft(subscription: Subscription): SubscriptionDraft {
+  return {
+    name: subscription.name,
+    site: subscription.site,
+    price: subscription.price,
+    currency: subscription.currency,
+    nextdate: subscription.nextdate,
+    account: subscription.account,
+    note: subscription.note,
+    continue: subscription.continue,
+  };
+}
+
+function matchesSubscriptionFilter(subscription: Subscription, filter: SubscriptionFilter, notificationDays: number) {
+  const days = daysUntil(subscription.nextdate);
+  switch (filter) {
+    case "overdue":
+      return subscription.continue && Number.isFinite(days) && days < 0;
+    case "soon":
+      return subscription.continue && days >= 0 && days <= notificationDays;
+    case "month":
+      return subscription.continue && days >= 0 && days <= 30;
+    case "undated":
+      return !subscription.nextdate;
+    case "stopped":
+      return !subscription.continue;
+    default:
+      return true;
+  }
 }
 
 function currencyLabel(price: number, currency: string) {
@@ -219,6 +268,8 @@ function ConsoleTopSurface({ activeKey }: { activeKey: string }) {
 
 export default function Home() {
   const importInputRef = useRef<HTMLInputElement>(null);
+  const subscriptionFormRef = useRef<HTMLDivElement>(null);
+  const [subscriptionFilter, setSubscriptionFilter] = useState<SubscriptionFilter>("all");
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [settings, setSettings] = useState<FengBroSettings>(defaultSettings);
   const [settingsLoaded, setSettingsLoaded] = useState(false);
@@ -258,6 +309,7 @@ export default function Home() {
   const filteredSubscriptions = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     return subscriptions
+      .filter((subscription) => matchesSubscriptionFilter(subscription, subscriptionFilter, settings.notificationDays))
       .filter((subscription) => {
         if (!normalized) return true;
         return [subscription.name, subscription.site, subscription.account, subscription.note, subscription.currency]
@@ -266,7 +318,25 @@ export default function Home() {
           .includes(normalized);
       })
       .sort((left, right) => daysUntil(left.nextdate) - daysUntil(right.nextdate));
-  }, [query, subscriptions]);
+  }, [query, settings.notificationDays, subscriptionFilter, subscriptions]);
+
+  const subscriptionFilterItems = useMemo(() => {
+    const definitions: { key: SubscriptionFilter; label: string }[] = [
+      { key: "all", label: "全部" },
+      { key: "overdue", label: "已過期" },
+      { key: "soon", label: `${settings.notificationDays} 天內` },
+      { key: "month", label: "30 天內" },
+      { key: "undated", label: "未設扣款日" },
+      { key: "stopped", label: "不續訂" },
+    ];
+    return definitions.map((item) => ({
+      ...item,
+      count: subscriptions.filter((subscription) => matchesSubscriptionFilter(subscription, item.key, settings.notificationDays)).length,
+    }));
+  }, [settings.notificationDays, subscriptions]);
+  const draftCurrencyOptions = currencyOptions.includes(draft.currency) || !draft.currency
+    ? currencyOptions
+    : [...currencyOptions, draft.currency];
 
   const stats = useMemo(() => {
     const active = subscriptions.filter((item) => item.continue);
@@ -509,18 +579,47 @@ export default function Home() {
     setEditingId(null);
   };
 
+  const revealSubscriptionForm = () => {
+    window.setTimeout(() => {
+      const form = subscriptionFormRef.current;
+      if (!form) return;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      form.scrollIntoView({ behavior: reduceMotion ? "instant" : "smooth", block: "center" });
+      form.querySelector<HTMLInputElement>("input")?.focus({ preventScroll: true });
+    }, 0);
+  };
+
   const editSubscription = (subscription: Subscription) => {
     setEditingId(subscription.id);
-    setDraft({
-      name: subscription.name,
-      site: subscription.site,
-      price: subscription.price,
-      currency: subscription.currency,
-      nextdate: subscription.nextdate,
-      account: subscription.account,
-      note: subscription.note,
-      continue: subscription.continue,
+    setDraft(toSubscriptionDraft(subscription));
+    revealSubscriptionForm();
+  };
+
+  const duplicateSubscription = (subscription: Subscription) => {
+    setEditingId(null);
+    setDraft({ ...toSubscriptionDraft(subscription), name: `${subscription.name}（複製）` });
+    revealSubscriptionForm();
+    flash(`已帶入「${subscription.name}」，確認後按新增訂閱`);
+  };
+
+  const postponeSubscription = async (subscription: Subscription) => {
+    const nextdate = addOneMonth(subscription.nextdate);
+    const response = await fetch(`/api/subscription/${subscription.id}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        ...getCloudHeaders(),
+      },
+      body: JSON.stringify({ ...toSubscriptionDraft(subscription), nextdate }),
     });
+    const result = await response.json();
+    if (!response.ok || result.error) {
+      flash(result.error || "更新下次扣款日失敗");
+      return;
+    }
+    setSubscriptions(await fetchCloudSubscriptions());
+    if (editingId === subscription.id) setDraft((current) => ({ ...current, nextdate }));
+    flash(`「${subscription.name}」下次扣款改為 ${nextdate}`);
   };
 
   const exportCsv = () => {
@@ -739,10 +838,24 @@ export default function Home() {
                 </div>
               ) : null}
 
-              <div className="form-strip">
+              <FilterChips
+                label="依扣款狀態篩選訂閱"
+                items={subscriptionFilterItems}
+                active={subscriptionFilter}
+                onChange={(key) => setSubscriptionFilter(key as SubscriptionFilter)}
+              />
+
+              <div className={`form-strip${editingId ? " is-editing" : ""}`} ref={subscriptionFormRef}>
+                {editingId ? <p className="form-editing-note">正在編輯「{subscriptions.find((item) => item.id === editingId)?.name || draft.name}」</p> : null}
                 <Field label="服務名稱" value={draft.name} placeholder="ChatGPT Plus" onChange={(value) => setDraft({ ...draft, name: value })} />
+                <Field label="網站 URL" type="url" value={draft.site} placeholder="https://" onChange={(value) => setDraft({ ...draft, site: value.trim() })} />
                 <Field label="金額" type="number" value={draft.price} onChange={(value) => setDraft({ ...draft, price: Number(value) })} />
-                <Field label="幣別" value={draft.currency} placeholder="TWD" onChange={(value) => setDraft({ ...draft, currency: value.toUpperCase() })} />
+                <label className="field">
+                  <span>幣別</span>
+                  <select value={draft.currency || "TWD"} onChange={(event) => setDraft({ ...draft, currency: event.target.value })}>
+                    {draftCurrencyOptions.map((currency) => <option key={currency} value={currency}>{currency}</option>)}
+                  </select>
+                </label>
                 <Field label="下次扣款" type="date" value={draft.nextdate} onChange={(value) => setDraft({ ...draft, nextdate: value })} />
                 <Field label="帳號 / Email" value={draft.account} onChange={(value) => setDraft({ ...draft, account: value })} />
                 <label className="field field-wide">
@@ -780,7 +893,7 @@ export default function Home() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredSubscriptions.length === 0 && <tr><td colSpan={7} className="empty-cell">{query ? "找不到符合的訂閱，試試其他關鍵字。" : "尚無訂閱紀錄。新增第一筆訂閱，或匯入 CSV 開始管理。"}</td></tr>}
+                    {filteredSubscriptions.length === 0 && <tr><td colSpan={7} className="empty-cell">{query || subscriptionFilter !== "all" ? "找不到符合的訂閱，試試其他關鍵字或篩選。" : "尚無訂閱紀錄。新增第一筆訂閱，或匯入 CSV 開始管理。"}</td></tr>}
                     {filteredSubscriptions.map((subscription) => {
                       const days = daysUntil(subscription.nextdate);
                       const status = !subscription.nextdate
@@ -814,8 +927,10 @@ export default function Home() {
                           <td className="note-cell">{subscription.note || "-"}</td>
                           <td>
                             <div className="row-actions">
-                              <button aria-label="編輯" onClick={() => editSubscription(subscription)}><Pencil size={15} /></button>
-                              <button aria-label="刪除" onClick={() => void deleteSubscriptionById(subscription.id)}><Trash2 size={15} /></button>
+                              <button aria-label={`${subscription.name} 下次扣款延後一個月`} title="延後一個月" onClick={() => void postponeSubscription(subscription)}><CalendarPlus size={15} /></button>
+                              <button aria-label={`複製 ${subscription.name}`} title="複製" onClick={() => duplicateSubscription(subscription)}><Copy size={15} /></button>
+                              <button aria-label={`編輯 ${subscription.name}`} title="編輯" onClick={() => editSubscription(subscription)}><Pencil size={15} /></button>
+                              <button aria-label={`刪除 ${subscription.name}`} title="刪除" onClick={() => void deleteSubscriptionById(subscription.id)}><Trash2 size={15} /></button>
                             </div>
                           </td>
                         </tr>

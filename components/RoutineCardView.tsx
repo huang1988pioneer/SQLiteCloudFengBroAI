@@ -1,6 +1,7 @@
 "use client";
 
-import { CalendarDays, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { CalendarCheck, CalendarDays, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { daysFromToday } from "@/lib/workspace-filters";
 import type { WorkspaceRecord } from "@/types/workspace";
 
 type Props = {
@@ -8,7 +9,16 @@ type Props = {
   loading: boolean;
   onEdit: (record: WorkspaceRecord) => void;
   onDelete: (record: WorkspaceRecord) => void;
+  onCompleteToday?: (record: WorkspaceRecord) => void;
 };
+
+function sinceLabel(value: string) {
+  const days = daysFromToday(value);
+  if (!Number.isFinite(days)) return "";
+  if (days === 0) return "今天";
+  if (days > 0) return `${days} 天後`;
+  return `距今 ${Math.abs(days)} 天`;
+}
 
 /** Palette for card accent colors – cycles through records. */
 const accentColors = [
@@ -47,7 +57,7 @@ function formatDate(value: unknown) {
   return String(value);
 }
 
-export function RoutineCardView({ records, loading, onEdit, onDelete }: Props) {
+export function RoutineCardView({ records, loading, onEdit, onDelete, onCompleteToday }: Props) {
   if (records.length === 0) {
     return (
       <div className="bank-empty">
@@ -118,6 +128,7 @@ export function RoutineCardView({ records, loading, onEdit, onDelete }: Props) {
                     <div className="bank-detail-item">
                       <CalendarDays size={13} />
                       <span>日期 1：{lastdate1}</span>
+                      <small className="routine-since">{sinceLabel(lastdate1)}</small>
                     </div>
                   ) : null}
                   {lastdate2 ? (
@@ -158,6 +169,18 @@ export function RoutineCardView({ records, loading, onEdit, onDelete }: Props) {
 
               {/* Actions */}
               <div className="bank-card-actions">
+                {onCompleteToday ? (
+                  <button
+                    type="button"
+                    className="bank-action-button routine-done-button"
+                    onClick={() => onCompleteToday(record)}
+                    disabled={loading}
+                    title="今天完成：日期依序往後移，日期 1 設為今天"
+                  >
+                    <CalendarCheck size={14} />
+                    <span>今天完成</span>
+                  </button>
+                ) : null}
                 <button
                   type="button"
                   className="bank-action-button"
